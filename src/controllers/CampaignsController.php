@@ -26,7 +26,6 @@ class CampaignsController extends BaseCpController
     {
         $request = Craft::$app->getRequest();
         $isPro = SpinToWin::getInstance()->editions->isPro();
-        $isPlus = $isPro;
 
         $selectedSiteId = null;
         if ($isPro) {
@@ -48,7 +47,6 @@ class CampaignsController extends BaseCpController
             'selectedSubnavItem' => 'campaigns',
             'campaigns' => $campaigns,
             'isPro' => $isPro,
-            'isPlus' => $isPro,
             'selectedSiteId' => $selectedSiteId,
         ]);
     }
@@ -65,7 +63,6 @@ class CampaignsController extends BaseCpController
     {
         $plugin = SpinToWin::getInstance();
         $isPro = $plugin->editions->isPro();
-        $isPlus = $isPro;
 
         if ($campaign === null) {
             if ($id !== null) {
@@ -112,7 +109,6 @@ class CampaignsController extends BaseCpController
             'poolAllocationStatus' => $poolAllocationStatus,
             'isNew' => !$campaign->id,
             'isPro' => $isPro,
-            'isPlus' => $isPlus,
             'crumbs' => [
                 [
                     'label' => Craft::t('spin-to-win', 'Campaigns'),
@@ -149,20 +145,32 @@ class CampaignsController extends BaseCpController
         $campaign->description = $request->getBodyParam('description', $campaign->description);
         $campaign->enabled = (bool)$request->getBodyParam('enabled', true);
         $campaign->displayMode = (string)$request->getBodyParam('displayMode', 'popup');
-        $campaign->triggerType = (string)$request->getBodyParam('triggerType', 'load');
+        $triggerType = (string)$request->getBodyParam('triggerType', 'load');
+        $scrollThreshold = (int)$request->getBodyParam('scrollThreshold', 0);
+
+        // Advanced Triggers (Scroll %, Exit-Intent, Inactivity) require Pro edition
+        if (!$plugin->editions->isPro() && in_array($triggerType, ['scroll', 'exit', 'inactivity'], true)) {
+            $triggerType = 'load';
+            $scrollThreshold = 0;
+        }
+
+        $campaign->triggerType = $triggerType;
         $campaign->triggerDelay = (int)$request->getBodyParam('triggerDelay', 0);
-        $campaign->scrollThreshold = (int)$request->getBodyParam('scrollThreshold', 0);
-        // Multi-site & Scheduling (Pro edition only)
+        $campaign->scrollThreshold = $scrollThreshold;
+
+        // Multi-site, Scheduling, and Double Opt-in Verification (Pro edition only)
         if ($plugin->editions->isPro()) {
             $campaign->siteId = $request->getBodyParam('siteId') ? (int)$request->getBodyParam('siteId') : null;
             $startDate = $request->getBodyParam('startDate');
             $campaign->startDate = !empty($startDate) ? \craft\helpers\DateTimeHelper::toDateTime($startDate) : null;
             $endDate = $request->getBodyParam('endDate');
             $campaign->endDate = !empty($endDate) ? \craft\helpers\DateTimeHelper::toDateTime($endDate) : null;
+            $campaign->requireVerification = (bool)$request->getBodyParam('requireVerification', false);
         } else {
             $campaign->siteId = null;
             $campaign->startDate = null;
             $campaign->endDate = null;
+            $campaign->requireVerification = false;
         }
 
         $campaign->welcomeTitle = $request->getBodyParam('welcomeTitle', $campaign->welcomeTitle);
@@ -174,7 +182,6 @@ class CampaignsController extends BaseCpController
         $campaign->requireName = (bool)$request->getBodyParam('requireName', false);
         $campaign->requireConsent = (bool)$request->getBodyParam('requireConsent', false);
         $campaign->consentText = $request->getBodyParam('consentText', $campaign->consentText);
-        $campaign->requireVerification = (bool)$request->getBodyParam('requireVerification', false);
         $campaign->spinLimitPolicy = (string)$request->getBodyParam('spinLimitPolicy', 'daily_per_email');
 
         // Probability Spin Pool & Allocation Mode

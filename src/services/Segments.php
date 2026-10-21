@@ -7,6 +7,7 @@ use Craft;
 use craft\db\Query;
 use craft\helpers\Db;
 use craft\helpers\StringHelper;
+use abdulkadiragoliya\spintowin\SpinToWin;
 use abdulkadiragoliya\spintowin\models\Segment;
 use yii\base\Component;
 use DateTime;
@@ -83,6 +84,10 @@ class Segments extends Component
         if ($runValidation && !$segment->validate()) {
             Craft::info('Segment not saved due to validation errors.', __METHOD__);
             return false;
+        }
+
+        if (!SpinToWin::getInstance()->editions->isPro()) {
+            $segment->minOrderValue = 0.0;
         }
 
         $now = Db::prepareDateForDb(new DateTime());
@@ -166,8 +171,14 @@ class Segments extends Component
                 $segment->discountValue = (float)($data['discountValue'] ?? 0);
                 $segment->allocatedCount = max(0, (int)($data['allocatedCount'] ?? $data['probabilityWeight'] ?? 10));
                 $segment->probabilityWeight = max(1, (int)($data['probabilityWeight'] ?? ($segment->allocatedCount > 0 ? $segment->allocatedCount : 10)));
-                $segment->couponDurationDays = max(0, (int)($data['couponDurationDays'] ?? 7));
-                $segment->minOrderValue = max(0, (float)($data['minOrderValue'] ?? 0));
+                // Advanced Coupon Expiry & Minimum Order Totals (Pro edition only)
+                if (SpinToWin::getInstance()->editions->isPro()) {
+                    $segment->couponDurationDays = max(0, (int)($data['couponDurationDays'] ?? 7));
+                    $segment->minOrderValue = max(0, (float)($data['minOrderValue'] ?? 0));
+                } else {
+                    $segment->couponDurationDays = 7;
+                    $segment->minOrderValue = 0.0;
+                }
                 $segment->color = (string)($data['color'] ?? '#ef4444');
                 $segment->textColor = (string)($data['textColor'] ?? '#ffffff');
                 $segment->isEnabled = isset($data['isEnabled']) && ((string)$data['isEnabled'] === '1' || $data['isEnabled'] === true || $data['isEnabled'] === 1);

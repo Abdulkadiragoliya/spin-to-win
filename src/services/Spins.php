@@ -186,6 +186,11 @@ class Spins extends Component
             $currentSite = Craft::$app->getSites()->getCurrentSite();
             $siteId = $currentSite ? $currentSite->id : null;
 
+            $isPro = SpinToWin::getInstance()->editions->isPro();
+            $requiresVerification = $isPro && (bool)$campaign->requireVerification && $isWinner;
+            $verificationToken = StringHelper::randomString(32);
+            $isVerified = !$requiresVerification;
+
             // 6. Record spin in spintowin_spins
             $spinValues = [
                 'campaignId' => $campaign->id,
@@ -201,8 +206,8 @@ class Spins extends Component
                 'isWinner' => $isWinner,
                 'rewardType' => $winningSegment->rewardType,
                 'couponCode' => $couponCode,
-                'verificationToken' => StringHelper::randomString(32),
-                'isVerified' => true,
+                'verificationToken' => $verificationToken,
+                'isVerified' => $isVerified,
                 'spinDate' => $today,
                 'dateCreated' => $now,
                 'dateUpdated' => $now,
@@ -256,15 +261,26 @@ class Spins extends Component
                     ->insert('{{%spintowin_coupons}}', $couponValues)
                     ->execute();
 
-                // Dispatch winner notification email (Pro Edition feature)
-                SpinToWin::getInstance()->emails->sendWinnerNotification(
-                    $campaign,
-                    $winningSegment,
-                    $email,
-                    $couponCode,
-                    $expiresAtFormatted,
-                    $name
-                );
+                // If double opt-in is required, send verification link; otherwise dispatch winner notification
+                if ($requiresVerification) {
+                    SpinToWin::getInstance()->emails->sendVerificationEmail(
+                        $campaign,
+                        $winningSegment,
+                        $email,
+                        $verificationToken,
+                        $name
+                    );
+                } else {
+                    // Dispatch winner notification email (Pro Edition feature)
+                    SpinToWin::getInstance()->emails->sendWinnerNotification(
+                        $campaign,
+                        $winningSegment,
+                        $email,
+                        $couponCode,
+                        $expiresAtFormatted,
+                        $name
+                    );
+                }
             }
 
             // 8. Record spin event in spintowin_events for conversion analytics
@@ -294,11 +310,16 @@ class Spins extends Component
                     'color' => $winningSegment->color,
                     'textColor' => $winningSegment->textColor,
                 ],
-                'couponCode' => $couponCode,
+                'couponCode' => $requiresVerification ? null : $couponCode,
+                'requiresVerification' => $requiresVerification,
                 'expiresAt' => $expiresAtFormatted,
-                'commerceAvailable' => $commerceAvailable,
-                'resultTitle' => $isWinner ? ($campaign->resultTitle ?: Craft::t('spin-to-win', 'Congratulations!')) : Craft::t('spin-to-win', 'Better Luck Next Time!'),
-                'resultText' => $isWinner ? ($campaign->resultText ?: Craft::t('spin-to-win', 'Here is your promotional coupon:')) : Craft::t('spin-to-win', 'Thank you for playing! Check back soon for more chances to win.'),
+                'commerceAvailable' => $commerceAvailable && !$requiresVerification,
+                'resultTitle' => $requiresVerification 
+                    ? Craft::t('spin-to-win', 'Check Your Email!')
+                    : ($isWinner ? ($campaign->resultTitle ?: Craft::t('spin-to-win', 'Congratulations!')) : Craft::t('spin-to-win', 'Better Luck Next Time!')),
+                'resultText' => $requiresVerification
+                    ? Craft::t('spin-to-win', 'We’ve emailed you a confirmation link. Please click it to verify your address and unlock your coupon code.')
+                    : ($isWinner ? ($campaign->resultText ?: Craft::t('spin-to-win', 'Here is your promotional coupon:')) : Craft::t('spin-to-win', 'Thank you for playing! Check back soon for more chances to win.')),
             ];
         } catch (Throwable $e) {
             $transaction->rollBack();

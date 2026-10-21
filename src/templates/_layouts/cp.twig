@@ -5,8 +5,7 @@
 
 {% set allSites = craft.app.sites.getAllSites() %}
 {% set isMultiSite = allSites|length > 1 %}
-{% set isPro = isPro ?? (craft.spinToWin.getEdition() in ['pro', 'plus']) %}
-{% set isPlus = isPro %}
+{% set isPro = isPro ?? (craft.spinToWin.getEdition() == 'pro') %}
 
 {% if isMultiSite and isPro %}
     {% css %}

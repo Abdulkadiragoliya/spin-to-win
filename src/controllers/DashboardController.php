@@ -25,7 +25,6 @@ class DashboardController extends BaseCpController
     {
         $plugin = SpinToWin::getInstance();
         $isPro = $plugin->editions->isPro();
-        $isPlus = $isPro;
         $request = Craft::$app->getRequest();
 
         $siteParam = $request->getQueryParam('site') ?? $request->getQueryParam('siteId');
@@ -88,7 +87,6 @@ class DashboardController extends BaseCpController
             'selectedSubnavItem' => 'dashboard',
             'edition' => $plugin->getEdition(),
             'isPro' => $isPro,
-            'isPlus' => $isPlus,
             'selectedSiteId' => $siteId,
             'stats' => [
                 'totalCampaigns' => $totalCampaigns,

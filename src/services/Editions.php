@@ -16,14 +16,19 @@ use yii\web\ForbiddenHttpException;
  */
 class Editions extends Component
 {
+    public const EDITION_LITE = 'lite';
+    public const EDITION_PRO = 'pro';
+
     public const FEATURE_SCHEDULING = 'scheduling';
     public const FEATURE_ADVANCED_TRIGGERS = 'advanced_triggers';
     public const FEATURE_ADVANCED_RESTRICTIONS = 'advanced_restrictions';
     public const FEATURE_EMAIL_DELIVERY = 'email_delivery';
     public const FEATURE_EMAIL_VERIFICATION = 'email_verification';
     public const FEATURE_ADVANCED_REPORTS = 'advanced_reports';
+    public const FEATURE_FILTERABLE_REPORTS = 'filterable_reports';
     public const FEATURE_CSV_EXPORT = 'csv_export';
     public const FEATURE_MULTISITE = 'multisite';
+    public const FEATURE_PER_SITE_SETTINGS = 'per_site_settings';
     public const FEATURE_ADVANCED_STYLING = 'advanced_styling';
 
     /**
@@ -36,8 +41,10 @@ class Editions extends Component
         self::FEATURE_EMAIL_DELIVERY => SpinToWin::EDITION_PRO,
         self::FEATURE_EMAIL_VERIFICATION => SpinToWin::EDITION_PRO,
         self::FEATURE_ADVANCED_REPORTS => SpinToWin::EDITION_PRO,
+        self::FEATURE_FILTERABLE_REPORTS => SpinToWin::EDITION_PRO,
         self::FEATURE_CSV_EXPORT => SpinToWin::EDITION_PRO,
         self::FEATURE_MULTISITE => SpinToWin::EDITION_PRO,
+        self::FEATURE_PER_SITE_SETTINGS => SpinToWin::EDITION_PRO,
         self::FEATURE_ADVANCED_STYLING => SpinToWin::EDITION_PRO,
     ];
 
@@ -52,22 +59,21 @@ class Editions extends Component
     }
 
     /**
-     * Check if the current edition is Pro (or higher)
+     * Check if the current edition is Pro
      *
      * @return bool
      */
     public function isPro(): bool
     {
         $edition = $this->getEdition();
-        if ($edition === 'pro' || $edition === 'plus') {
+        if ($edition === 'pro') {
             return true;
         }
         return SpinToWin::getInstance()->is(SpinToWin::EDITION_PRO, '>=');
     }
 
     /**
-     * Alias for backwards compatibility
-     *
+     * @deprecated Use isPro() instead
      * @return bool
      */
     public function isPlus(): bool
@@ -88,6 +94,10 @@ class Editions extends Component
         }
 
         $required = self::$featureMap[$feature];
+        if ($required === SpinToWin::EDITION_PRO) {
+            return $this->isPro();
+        }
+
         return SpinToWin::getInstance()->is($required, '>=');
     }
 
@@ -128,8 +138,7 @@ class Editions extends Component
     }
 
     /**
-     * Alias for backwards compatibility
-     *
+     * @deprecated Use requirePro() instead
      * @param string|null $featureName
      * @throws ForbiddenHttpException
      */

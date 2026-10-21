@@ -524,11 +524,18 @@
                                             </div>
 
                                             <div>
-                                                <label class="stw-field-label">{{ "Colors (Slice & Text)"|t('spin-to-win') }}</label>
+                                                <label class="stw-field-label">{{ "Colors & Expiry"|t('spin-to-win') }}</label>
                                                 <div class="stw-color-swatch-wrap">
                                                     <input type="color" name="segments[{{ idx }}][color]" class="stw-color-input slice-bg-color" value="{{ segment.color }}" title="Slice background color">
                                                     <input type="color" name="segments[{{ idx }}][textColor]" class="stw-color-input slice-text-color" value="{{ segment.textColor }}" title="Slice text color">
-                                                    <input type="number" min="0" max="365" name="segments[{{ idx }}][couponDurationDays]" class="stw-input" value="{{ segment.couponDurationDays }}" placeholder="Days" title="Days valid" style="width: 65px;">
+                                                    {% if isProEdition %}
+                                                        <input type="number" min="0" max="365" name="segments[{{ idx }}][couponDurationDays]" class="stw-input" value="{{ segment.couponDurationDays }}" placeholder="Days" title="Days valid (Pro)" style="width: 55px;">
+                                                        <input type="number" step="0.01" min="0" name="segments[{{ idx }}][minOrderValue]" class="stw-input" value="{{ segment.minOrderValue }}" placeholder="Min $" title="Minimum Order Total (Pro)" style="width: 65px;">
+                                                    {% else %}
+                                                        <input type="hidden" name="segments[{{ idx }}][couponDurationDays]" value="7">
+                                                        <input type="hidden" name="segments[{{ idx }}][minOrderValue]" value="0">
+                                                        <span class="badge" title="Advanced Coupon Expiry & Minimum Order Totals require Pro edition" style="background: #f1f5f9; color: #64748b; font-size: 10px; font-weight: 700; padding: 4px 6px; border-radius: 4px;">7d / $0</span>
+                                                    {% endif %}
                                                 </div>
                                             </div>
                                         </div>
@@ -751,7 +758,7 @@
 
                         {% set allSites = craft.app.sites.getAllSites() %}
                         {% if allSites|length > 1 %}
-                            {% set isProEdition = isPro ?? isPlus ?? false %}
+                            {% set isProEdition = isPro ?? false %}
                             {% if isProEdition %}
                                 {% set siteOptions = [{ label: "All Sites (Global)"|t('spin-to-win'), value: '' }] %}
                                 {% for s in allSites %}
@@ -814,24 +821,40 @@
                             }) }}
                         </div>
 
+                        {% set isProEdition = isPro ?? false %}
+                        {% set triggerOptions = [
+                            { label: "Immediately on Page Load"|t('spin-to-win'), value: 'load' },
+                            { label: "Timed Delay (After X seconds)"|t('spin-to-win'), value: 'delay' },
+                            { label: "Manual Trigger (Button/Link click)"|t('spin-to-win'), value: 'manual' }
+                        ] %}
+                        {% if isProEdition %}
+                            {% set triggerOptions = triggerOptions|merge([
+                                { label: "Scroll Depth Threshold (%) [Pro]"|t('spin-to-win'), value: 'scroll' },
+                                { label: "Exit-Intent Detection [Pro]"|t('spin-to-win'), value: 'exit' },
+                                { label: "User Inactivity Timer [Pro]"|t('spin-to-win'), value: 'inactivity' }
+                            ]) %}
+                        {% endif %}
+
                         {{ forms.selectField({
                             label: "Trigger Type"|t('spin-to-win'),
                             instructions: "When the wheel appears on the visitor's screen."|t('spin-to-win'),
                             id: 'triggerType',
                             name: 'triggerType',
                             value: campaign.triggerType,
-                            options: [
-                                { label: "Immediately on Page Load"|t('spin-to-win'), value: 'load' },
-                                { label: "Timed Delay (After X seconds)"|t('spin-to-win'), value: 'delay' },
-                                { label: "Scroll Depth Threshold (%)"|t('spin-to-win'), value: 'scroll' },
-                                { label: "Manual Trigger (Button/Link click)"|t('spin-to-win'), value: 'manual' }
-                            ]
+                            options: triggerOptions
                         }) }}
 
-                        <div id="delay-field">
+                        {% if not isProEdition %}
+                            <p style="font-size: 12px; color: #64748b; margin-top: -10px; margin-bottom: 16px;">
+                                <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; margin-right: 6px;">{{ "Pro Edition"|t('spin-to-win') }}</span>
+                                {{ "Advanced triggers (Scroll Depth %, Exit-Intent, and Inactivity Timer) are unlocked in the Pro edition."|t('spin-to-win') }}
+                            </p>
+                        {% endif %}
+
+                        <div id="delay-field" style="{% if campaign.triggerType != 'delay' and campaign.triggerType != 'inactivity' %}display: none;{% endif %}">
                             {{ forms.textField({
-                                label: "Trigger Delay (Seconds)"|t('spin-to-win'),
-                                instructions: "Seconds to wait after page load before displaying the wheel."|t('spin-to-win'),
+                                label: "Trigger Delay / Inactivity (Seconds)"|t('spin-to-win'),
+                                instructions: "Seconds to wait before displaying the wheel."|t('spin-to-win'),
                                 id: 'triggerDelay',
                                 name: 'triggerDelay',
                                 type: 'number',
@@ -840,17 +863,19 @@
                             }) }}
                         </div>
 
-                        <div id="scroll-field">
-                            {{ forms.textField({
-                                label: "Scroll Depth Threshold (%)"|t('spin-to-win'),
-                                instructions: "Percentage of the page scrolled down before opening the wheel."|t('spin-to-win'),
-                                id: 'scrollThreshold',
-                                name: 'scrollThreshold',
-                                type: 'number',
-                                value: campaign.scrollThreshold,
-                                errors: campaign.getErrors('scrollThreshold')
-                            }) }}
-                        </div>
+                        {% if isProEdition %}
+                            <div id="scroll-field" style="{% if campaign.triggerType != 'scroll' %}display: none;{% endif %}">
+                                {{ forms.textField({
+                                    label: "Scroll Depth Threshold (%)"|t('spin-to-win'),
+                                    instructions: "Percentage of the page scrolled down before opening the wheel."|t('spin-to-win'),
+                                    id: 'scrollThreshold',
+                                    name: 'scrollThreshold',
+                                    type: 'number',
+                                    value: campaign.scrollThreshold,
+                                    errors: campaign.getErrors('scrollThreshold')
+                                }) }}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -960,9 +985,36 @@
                         }) }}
                     </div>
 
+                    <!-- Double Opt-In Email Verification (Pro Edition) -->
+                    <div class="card" style="padding: 24px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                        {% set isProVerif = isPro ?? false %}
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #0f172a;">
+                                {{ "Double Opt-In Email Verification"|t('spin-to-win') }}
+                            </h3>
+                            {% if not isProVerif %}
+                                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 4px;">{{ "Pro Edition"|t('spin-to-win') }}</span>
+                            {% endif %}
+                        </div>
+
+                        {% if isProVerif %}
+                            {{ forms.lightswitchField({
+                                label: "Require Double Opt-In Verification"|t('spin-to-win'),
+                                instructions: "Send an email verification link before revealing or activating the prize coupon code."|t('spin-to-win'),
+                                id: 'requireVerification',
+                                name: 'requireVerification',
+                                on: campaign.requireVerification
+                            }) }}
+                        {% else %}
+                            <p style="font-size: 13px; color: #64748b; margin: 0; line-height: 1.5;">
+                                {{ "Cryptographic double opt-in email verification is available in the Pro edition. Lite campaigns grant coupons immediately upon spinning."|t('spin-to-win') }}
+                            </p>
+                        {% endif %}
+                    </div>
+
                     <!-- Scheduling (Pro Edition) -->
                     <div class="card" style="padding: 24px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
-                        {% set isProSched = isPro ?? isPlus ?? false %}
+                        {% set isProSched = isPro ?? false %}
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                             <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #0f172a;">
                                 {{ "Campaign Scheduling"|t('spin-to-win') }}
@@ -1017,6 +1069,7 @@
     <!-- Live Builder & Simulator Logic -->
     <script>
         (function() {
+            const isProEdition = {{ isProEdition ? 'true' : 'false' }};
             // Keyboard shortcut: Ctrl+S or Cmd+S to save
             document.addEventListener('keydown', function(e) {
                 if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
@@ -1843,11 +1896,17 @@
                                 <input type="hidden" name="segments[${newIdx}][probabilityWeight]" class="slice-weight-input" value="${allocated}">
                             </div>
                             <div>
-                                <label class="stw-field-label">Colors (Slice & Text)</label>
+                                <label class="stw-field-label">Colors & Expiry</label>
                                 <div class="stw-color-swatch-wrap">
                                     <input type="color" name="segments[${newIdx}][color]" class="stw-color-input slice-bg-color" value="${color}" title="Slice background color">
                                     <input type="color" name="segments[${newIdx}][textColor]" class="stw-color-input slice-text-color" value="#ffffff" title="Slice text color">
-                                    <input type="number" min="0" max="365" name="segments[${newIdx}][couponDurationDays]" class="stw-input" value="7" placeholder="Days" style="width: 65px;">
+                                    ${isProEdition 
+                                        ? `<input type="number" min="0" max="365" name="segments[${newIdx}][couponDurationDays]" class="stw-input" value="7" placeholder="Days" style="width: 55px;" title="Days valid (Pro)">
+                                           <input type="number" step="0.01" min="0" name="segments[${newIdx}][minOrderValue]" class="stw-input" value="0" placeholder="Min $" style="width: 65px;" title="Minimum Order Total (Pro)">`
+                                        : `<input type="hidden" name="segments[${newIdx}][couponDurationDays]" value="7">
+                                           <input type="hidden" name="segments[${newIdx}][minOrderValue]" value="0">
+                                           <span class="badge" title="Advanced Coupon Expiry & Minimum Order Totals require Pro edition" style="background: #f1f5f9; color: #64748b; font-size: 10px; font-weight: 700; padding: 4px 6px; border-radius: 4px;">7d / $0</span>`
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -1966,6 +2025,21 @@
                     displayModeSelect.addEventListener('change', function() {
                         sidebarPosField.style.display = this.value === 'sidebar' ? 'block' : 'none';
                     });
+                }
+
+                // Toggle trigger-specific fields
+                const triggerTypeSelect = document.getElementById('triggerType');
+                const delayField = document.getElementById('delay-field');
+                const scrollField = document.getElementById('scroll-field');
+                const updateTriggerFields = function() {
+                    if (!triggerTypeSelect) return;
+                    const val = triggerTypeSelect.value;
+                    if (delayField) delayField.style.display = (val === 'delay' || val === 'inactivity') ? 'block' : 'none';
+                    if (scrollField) scrollField.style.display = (val === 'scroll') ? 'block' : 'none';
+                };
+                if (triggerTypeSelect) {
+                    triggerTypeSelect.addEventListener('change', updateTriggerFields);
+                    updateTriggerFields();
                 }
             }
 

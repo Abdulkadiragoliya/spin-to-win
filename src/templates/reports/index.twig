@@ -3,7 +3,7 @@
 {% set selectedSubnavItem = 'reports' %}
 {% set title = 'Reports & Analytics'|t('spin-to-win') %}
 
-{% set isProEdition = isPro ?? isPlus ?? false %}
+{% set isProEdition = isPro ?? false %}
 
 {% block actionButton %}
     {% if isProEdition %}

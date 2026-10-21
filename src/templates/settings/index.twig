@@ -13,7 +13,7 @@
 {% endblock %}
 
 {% block pageContent %}
-    {% set isProEdition = isPro ?? isPlus ?? false %}
+    {% set isProEdition = isPro ?? false %}
     {% if isMultiSite and isProEdition %}
         <!-- Dedicated Multi-Site Switcher Bar -->
         <div style="background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%); border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
@@ -53,6 +53,17 @@
                 </div>
             </div>
         </div>
+    {% elseif isMultiSite and not isProEdition %}
+        <!-- Lite Edition Multi-Site Notice -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">🌐</span>
+                <span style="font-size: 13px; color: #475569;">
+                    {{ "Multi-site per-site settings isolation is a Pro feature. In Lite edition, settings configured here apply globally across your installation."|t('spin-to-win') }}
+                </span>
+            </div>
+            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; background: #e2e8f0; color: #64748b; padding: 3px 8px; border-radius: 4px;">{{ "Pro Edition"|t('spin-to-win') }}</span>
+        </div>
     {% endif %}
 
     <form method="post" id="settings-form" accept-charset="UTF-8">
@@ -69,10 +80,17 @@
             } %}
 
             <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
-                <button type="submit" class="btn submit">{{ ('Save Settings for ' ~ activeSite.name)|t('spin-to-win') }}</button>
-                {% if isMultiSite %}
+                {% if isProEdition %}
+                    <button type="submit" class="btn submit">{{ ('Save Settings for ' ~ activeSite.name)|t('spin-to-win') }}</button>
+                    {% if isMultiSite %}
+                        <span style="font-size: 12px; color: #64748b;">
+                            {{ "Saving will update settings exclusively for "|t('spin-to-win') }} <strong>{{ activeSite.name }}</strong>.
+                        </span>
+                    {% endif %}
+                {% else %}
+                    <button type="submit" class="btn submit">{{ 'Save Global Settings'|t('spin-to-win') }}</button>
                     <span style="font-size: 12px; color: #64748b;">
-                        {{ "Saving will update settings exclusively for "|t('spin-to-win') }} <strong>{{ activeSite.name }}</strong>.
+                        {{ "Saving will update global settings across your Craft installation."|t('spin-to-win') }}
                     </span>
                 {% endif %}
             </div>

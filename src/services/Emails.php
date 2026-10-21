@@ -178,4 +178,121 @@ HTML;
             return false;
         }
     }
+
+    /**
+     * Send Double Opt-In verification email with unique confirmation token (Pro Edition feature)
+     *
+     * @param Campaign $campaign
+     * @param Segment $segment
+     * @param string $recipientEmail
+     * @param string $verificationToken
+     * @param string|null $recipientName
+     * @return bool
+     */
+    public function sendVerificationEmail(
+        Campaign $campaign,
+        Segment $segment,
+        string $recipientEmail,
+        string $verificationToken,
+        ?string $recipientName = null
+    ): bool {
+        $plugin = SpinToWin::getInstance();
+        if (!$plugin->editions->hasFeature(Editions::FEATURE_EMAIL_VERIFICATION)) {
+            Craft::info("Double opt-in verification email skipped: requires Pro Edition.", __METHOD__);
+            return false;
+        }
+
+        try {
+            $site = Craft::$app->getSites()->getCurrentSite();
+            $siteName = $site->name ?? Craft::$app->getSystemName();
+            $verifyUrl = UrlHelper::siteUrl('spin-to-win/spin/verify', ['token' => $verificationToken]);
+
+            $greeting = $recipientName ? "Hi {$recipientName}," : "Hello,";
+            $subject = Craft::t('spin-to-win', 'Verify Your Email to Claim Your {prize} Prize', ['prize' => $segment->label]);
+
+            $htmlBody = <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$subject}</title>
+</head>
+<body style="margin: 0; padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; color: #1e293b;">
+    <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+        <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 36px 24px; text-align: center; color: #ffffff;">
+            <div style="font-size: 38px; margin-bottom: 8px;">🎁</div>
+            <h1 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Confirm Your Email</h1>
+            <p style="margin: 0; font-size: 15px; opacity: 0.95;">You spun the wheel on {$siteName} and won {$segment->label}!</p>
+        </div>
+        
+        <div style="padding: 32px 24px; text-align: center;">
+            <p style="margin: 0 0 16px 0; font-size: 15px; color: #475569; text-align: left;">{$greeting}</p>
+            <p style="margin: 0 0 24px 0; font-size: 15px; color: #475569; text-align: left; line-height: 1.5;">
+                Please verify your email address to unlock and reveal your exclusive discount coupon code:
+            </p>
+
+            <div style="margin: 32px 0 16px 0;">
+                <a href="{$verifyUrl}" style="background: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 30px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);">
+                    Verify Email & Unlock Coupon &rarr;
+                </a>
+            </div>
+            
+            <p style="font-size: 12px; color: #94a3b8; margin-top: 24px;">
+                If you did not spin the prize wheel on our website, you can safely ignore this message.
+            </p>
+        </div>
+
+        <div style="background: #f8fafc; padding: 16px 24px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
+            Sent by {$siteName} • Spin to Win Promotions
+        </div>
+    </div>
+</body>
+</html>
+HTML;
+
+            $siteSettings = $plugin->getSettings()->getForSite($site->handle ?? null);
+            $message = Craft::$app->getMailer()->compose();
+
+            $fromAddress = !empty($siteSettings['emailSenderAddress']) ? $siteSettings['emailSenderAddress'] : (Craft::$app->getProjectConfig()->get('email.fromEmail') ?? null);
+            $fromName = !empty($siteSettings['emailSenderName']) ? $siteSettings['emailSenderName'] : $siteName;
+            if ($fromAddress) {
+                $message->setFrom([$fromAddress => $fromName]);
+            }
+            if (!empty($siteSettings['emailReplyTo'])) {
+                $message->setReplyTo($siteSettings['emailReplyTo']);
+            }
+
+            $message->setTo($recipientEmail);
+            $message->setSubject($subject);
+            $message->setHtmlBody($htmlBody);
+
+            $sent = $message->send();
+
+            if ($sent) {
+                $now = Db::prepareDateForDb(new DateTime());
+                Craft::$app->getDb()->createCommand()
+                    ->insert('{{%spintowin_events}}', [
+                        'campaignId' => (int)$campaign->id,
+                        'eventType' => 'verification_email_sent',
+                        'ipAddress' => 'system',
+                        'userAgent' => 'SpinToWin Mailer',
+                        'metadata' => json_encode([
+                            'email' => $recipientEmail,
+                            'prize' => $segment->label,
+                        ]),
+                        'dateCreated' => $now,
+                    ])
+                    ->execute();
+
+                Craft::info("Sent verification email to '{$recipientEmail}'", __METHOD__);
+                return true;
+            }
+
+            return false;
+        } catch (Throwable $e) {
+            Craft::error("Failed to send verification email: {$e->getMessage()}", __METHOD__);
+            return false;
+        }
+    }
 }

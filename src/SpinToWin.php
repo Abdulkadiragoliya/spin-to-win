@@ -160,6 +160,7 @@ class SpinToWin extends Plugin
                 $event->rules['spin-to-win/spin/eligibility'] = 'spin-to-win/spin/eligibility';
                 $event->rules['spin-to-win/spin/record-view'] = 'spin-to-win/spin/record-view';
                 $event->rules['spin-to-win/spin/apply-cart'] = 'spin-to-win/spin/apply-cart';
+                $event->rules['spin-to-win/spin/verify'] = 'spin-to-win/spin/verify';
             }
         );
 
@@ -266,7 +267,6 @@ class SpinToWin extends Plugin
             'plugin' => $this,
             'settings' => $this->getSettings(),
             'isPro' => $this->editions->isPro(),
-            'isPlus' => $this->editions->isPro(),
         ]);
     }
 

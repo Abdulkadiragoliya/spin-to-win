@@ -26,7 +26,6 @@ class ReportsController extends BaseCpController
     public function actionIndex(): Response
     {
         $isPro = SpinToWin::getInstance()->editions->isPro();
-        $isPlus = $isPro;
         $reportsService = SpinToWin::getInstance()->reports;
 
         $request = Craft::$app->getRequest();
@@ -65,7 +64,6 @@ class ReportsController extends BaseCpController
             'title' => Craft::t('spin-to-win', 'Reports & Analytics'),
             'selectedSubnavItem' => 'reports',
             'isPro' => $isPro,
-            'isPlus' => $isPlus,
             'campaignId' => $campaignId,
             'selectedSiteId' => $siteId,
             'allCampaigns' => $allCampaigns,

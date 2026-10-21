@@ -113,8 +113,7 @@ class SpinToWinVariable
     }
 
     /**
-     * Alias for backwards compatibility
-     *
+     * @deprecated Use isPro() instead
      * @return bool
      */
     public function isPlus(): bool
