@@ -31,7 +31,7 @@
     instructions: "Name used in email notifications sent to customers from this site."|t('spin-to-win'),
     id: 'emailSenderName',
     name: 'emailSenderName',
-    value: currentVals.emailSenderName,
+    value: currentVals.emailSenderName|default(''),
     errors: settings.getErrors('emailSenderName'),
     placeholder: "Store Marketing"
 }) }}
@@ -41,9 +41,9 @@
     instructions: "Email address used in the From header for notifications from this site."|t('spin-to-win'),
     id: 'emailSenderAddress',
     name: 'emailSenderAddress',
-    value: currentVals.emailSenderAddress,
+    value: currentVals.emailSenderAddress|default(''),
     errors: settings.getErrors('emailSenderAddress'),
-    placeholder: "noreply@yourdomain.com"
+    placeholder: "noreply@example.com"
 }) }}
 
 {{ forms.textField({
@@ -51,9 +51,9 @@
     instructions: "Optional reply-to email address for this site."|t('spin-to-win'),
     id: 'emailReplyTo',
     name: 'emailReplyTo',
-    value: currentVals.emailReplyTo,
+    value: currentVals.emailReplyTo|default(''),
     errors: settings.getErrors('emailReplyTo'),
-    placeholder: "support@yourdomain.com"
+    placeholder: "support@example.com"
 }) }}
 
 <hr style="margin: 20px 0; border: none; border-top: 1px solid #e2e8f0;">

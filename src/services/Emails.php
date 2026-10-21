@@ -130,7 +130,20 @@ HTML;
 </html>
 HTML;
 
+            $siteSettings = $plugin->getSettings()->getForSite($site->handle ?? null);
+
             $message = Craft::$app->getMailer()->compose();
+
+            // Apply site-specific sender name and address if configured
+            $fromAddress = !empty($siteSettings['emailSenderAddress']) ? $siteSettings['emailSenderAddress'] : (Craft::$app->getProjectConfig()->get('email.fromEmail') ?? null);
+            $fromName = !empty($siteSettings['emailSenderName']) ? $siteSettings['emailSenderName'] : $siteName;
+            if ($fromAddress) {
+                $message->setFrom([$fromAddress => $fromName]);
+            }
+            if (!empty($siteSettings['emailReplyTo'])) {
+                $message->setReplyTo($siteSettings['emailReplyTo']);
+            }
+
             $message->setTo($recipientEmail);
             $message->setSubject($subject);
             $message->setHtmlBody($htmlBody);

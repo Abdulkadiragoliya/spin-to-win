@@ -45,7 +45,7 @@ class Settings extends Model
     public int $retentionDays = 90;
 
     /**
-     * @var array Site-specific settings map keyed by site handle, e.g. ['default' => [...], 'gravesendSteel' => [...]]
+     * @var array Site-specific settings map keyed by site handle, e.g. ['default' => [...], 'store2' => [...]]
      */
     public array $siteSettings = [];
 
@@ -64,15 +64,42 @@ class Settings extends Model
     }
 
     /**
+     * Check if a specific site has its own explicitly saved custom settings
+     *
+     * @param string $siteHandle
+     * @return bool
+     */
+    public function hasCustomSettingsForSite(string $siteHandle): bool
+    {
+        return !empty($this->siteSettings[$siteHandle]) && is_array($this->siteSettings[$siteHandle]);
+    }
+
+    /**
      * Get settings array specifically resolved for a site handle
      *
      * @param string|null $siteHandle
+     * @param bool $withFallback Whether to fallback to global/primary settings if not explicitly saved
      * @return array
      */
-    public function getForSite(?string $siteHandle = null): array
+    public function getForSite(?string $siteHandle = null, bool $withFallback = true): array
     {
         if ($siteHandle === null) {
             $siteHandle = Craft::$app->getSites()->getCurrentSite()->handle;
+        }
+
+        // If CP edit mode and no custom settings saved for this site yet, don't pre-fill with other site's text
+        if (!$withFallback) {
+            if ($siteHandle && !empty($this->siteSettings[$siteHandle]) && is_array($this->siteSettings[$siteHandle])) {
+                return $this->siteSettings[$siteHandle];
+            }
+            return [
+                'emailSenderName' => '',
+                'emailSenderAddress' => '',
+                'emailReplyTo' => '',
+                'trackImpressions' => $this->trackImpressions,
+                'pruneOldSpins' => $this->pruneOldSpins,
+                'retentionDays' => $this->retentionDays,
+            ];
         }
 
         $base = [

@@ -126,11 +126,11 @@ In multi-site Craft installations, Spin to Win Plus provides native, comprehensi
 ### 1. Global vs Site-Specific Campaigns
 When creating a campaign, the **Target Site** selector allows you to:
 - **All Sites (Global)**: Campaign runs universally across every site in your Craft installation.
-- **Specific Site Target**: Restrict the promotional wheel exclusively to a specific storefront (e.g., `Surrey Steels` or `Gravesend Steel`).
+- **Specific Site Target**: Restrict the promotional wheel exclusively to a specific storefront (e.g., `Store 1` or `Store 2`).
 
 ### 2. Isolated Per-Site Settings
 Under **CP → Spin to Win → Settings**, settings are saved independently per site:
-- Sender Name & Sender Email Address (e.g. `orders@surreysteels.com` vs `sales@gravesendsteel.com`).
+- Sender Name & Sender Email Address (e.g. `orders@store1.com` vs `sales@store2.com`).
 - Reply-To Email.
 - Impression tracking toggle.
 - Data retention rules (auto-pruning old spin logs).
@@ -528,6 +528,5 @@ See [CHANGELOG.md](CHANGELOG.md) for full release history and notes.
 ## Support & Feedback
 
 - **Author**: Abdulkadir Agoliya
-- **Email**: [abdulkadir.agoliya@gmail.com](mailto:abdulkadir.agoliya@gmail.com)
-- **GitHub**: [https://github.com/Abdulkadiragoliya/spin-to-win](https://github.com/Abdulkadiragoliya/spin-to-win)
-- **Issues**: [https://github.com/Abdulkadiragoliya/spin-to-win/issues](https://github.com/Abdulkadiragoliya/spin-to-win/issues)
+- **GitHub Repository**: [https://github.com/Abdulkadiragoliya/spin-to-win](https://github.com/Abdulkadiragoliya/spin-to-win)
+- **Issue Tracker & Discussions**: [https://github.com/Abdulkadiragoliya/spin-to-win/issues](https://github.com/Abdulkadiragoliya/spin-to-win/issues)

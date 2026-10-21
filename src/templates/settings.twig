@@ -18,7 +18,7 @@
     name: 'emailSenderAddress',
     value: settings.emailSenderAddress,
     errors: settings.getErrors('emailSenderAddress'),
-    placeholder: "noreply@yourdomain.com"
+    placeholder: "noreply@example.com"
 }) }}
 
 {{ forms.textField({
@@ -27,7 +27,8 @@
     id: 'emailReplyTo',
     name: 'emailReplyTo',
     value: settings.emailReplyTo,
-    errors: settings.getErrors('emailReplyTo')
+    errors: settings.getErrors('emailReplyTo'),
+    placeholder: "support@example.com"
 }) }}
 
 <hr>

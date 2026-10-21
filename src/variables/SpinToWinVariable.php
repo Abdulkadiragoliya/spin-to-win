@@ -101,4 +101,16 @@ class SpinToWinVariable
     {
         return SpinToWin::getInstance()->getEdition();
     }
+
+    /**
+     * Get settings specifically resolved for current or requested site
+     *
+     * @param string|null $siteHandle
+     * @return array
+     */
+    public function getSettings(?string $siteHandle = null): array
+    {
+        $siteHandle = $siteHandle ?? (Craft::$app->getSites()->getCurrentSite()->handle ?? null);
+        return SpinToWin::getInstance()->getSettings()->getForSite($siteHandle);
+    }
 }

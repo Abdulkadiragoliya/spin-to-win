@@ -347,6 +347,12 @@ class Spins extends Component
     public function recordImpression(int $campaignId, ?string $ipAddress = null, ?string $userAgent = null): bool
     {
         try {
+            $site = Craft::$app->getSites()->getCurrentSite();
+            $siteSettings = SpinToWin::getInstance()->getSettings()->getForSite($site->handle ?? null);
+            if (isset($siteSettings['trackImpressions']) && !$siteSettings['trackImpressions']) {
+                return false;
+            }
+
             $request = Craft::$app->getRequest();
             $isWeb = $request instanceof \craft\web\Request;
             $ip = $ipAddress ?? ($isWeb ? $request->getUserIP() : '127.0.0.1');

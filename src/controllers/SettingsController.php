@@ -42,7 +42,8 @@ class SettingsController extends BaseCpController
         }
 
         $allSettings = $plugin->getSettings();
-        $siteValues = $allSettings->getForSite($activeSite->handle);
+        $hasCustom = $allSettings->hasCustomSettingsForSite($activeSite->handle);
+        $siteValues = $allSettings->getForSite($activeSite->handle, false);
 
         return $this->renderTemplate('spin-to-win/settings/index', [
             'title' => Craft::t('spin-to-win', 'Settings'),
@@ -50,6 +51,7 @@ class SettingsController extends BaseCpController
             'plugin' => $plugin,
             'settings' => $allSettings,
             'siteValues' => $siteValues,
+            'hasCustomSettings' => $hasCustom,
             'activeSite' => $activeSite,
             'selectedSiteId' => $activeSite->id,
             'edition' => $plugin->getEdition(),
@@ -96,13 +98,20 @@ class SettingsController extends BaseCpController
             'retentionDays' => max(1, (int)($posted['retentionDays'] ?? 90)),
         ];
 
+        // Retain existing root properties to prevent them from being wiped out
         $saveData = [
+            'emailSenderName' => $existingSettings->emailSenderName,
+            'emailSenderAddress' => $existingSettings->emailSenderAddress,
+            'emailReplyTo' => $existingSettings->emailReplyTo,
+            'trackImpressions' => $existingSettings->trackImpressions,
+            'pruneOldSpins' => $existingSettings->pruneOldSpins,
+            'retentionDays' => $existingSettings->retentionDays,
             'siteSettings' => $siteSettings,
         ];
 
-        // Also keep base settings updated if on primary site or if global is empty
+        // Also keep base settings updated if on primary site
         $primarySite = Craft::$app->getSites()->getPrimarySite();
-        if ($siteHandle === $primarySite->handle || empty($existingSettings->emailSenderName)) {
+        if ($siteHandle === $primarySite->handle) {
             $saveData['emailSenderName'] = $siteSettings[$siteHandle]['emailSenderName'];
             $saveData['emailSenderAddress'] = $siteSettings[$siteHandle]['emailSenderAddress'];
             $saveData['emailReplyTo'] = $siteSettings[$siteHandle]['emailReplyTo'];
