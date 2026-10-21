@@ -1,0 +1,100 @@
+{
+  "name": "abdulkadiragoliya/spin-to-win",
+  "description": "Gamified Spin to Win prize wheel and promotional coupon system for Craft CMS and Craft Commerce.",
+  "type": "craft-plugin",
+  "keywords": [
+    "craft",
+    "cms",
+    "craftcms",
+    "craft-plugin",
+    "commerce",
+    "craft-commerce",
+    "spin-to-win",
+    "wheel",
+    "coupons",
+    "promotions",
+    "marketing",
+    "gamification"
+  ],
+  "homepage": "https://github.com/Abdulkadiragoliya/spin-to-win",
+  "support": {
+    "email": "abdulkadir.agoliya@gmail.com",
+    "docs": "https://github.com/Abdulkadiragoliya/spin-to-win#readme",
+    "issues": "https://github.com/Abdulkadiragoliya/spin-to-win/issues"
+  },
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "Abdulkadir Agoliya",
+      "homepage": "https://github.com/Abdulkadiragoliya"
+    }
+  ],
+  "require": {
+    "php": ">=8.0.2",
+    "craftcms/cms": "^4.0.0 || ^5.0.0"
+  },
+  "suggest": {
+    "craftcms/commerce": "Required for automated single-use coupon generation and cart discount synchronization (^4.0.0 || ^5.0.0)."
+  },
+  "require-dev": {
+    "craftcms/generator": "^1.3.0 || ^2.0.0",
+    "yiisoft/yii2-shell": "^2.0.3"
+  },
+  "autoload": {
+    "psr-4": {
+      "abdulkadiragoliya\\spintowin\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "abdulkadiragoliya\\spintowintests\\": "tests/"
+    }
+  },
+  "extra": {
+    "name": "Spin to Win",
+    "handle": "spin-to-win",
+    "developer": "Abdulkadir Agoliya",
+    "developerUrl": "https://github.com/Abdulkadiragoliya",
+    "documentationUrl": "https://github.com/Abdulkadiragoliya/spin-to-win#readme",
+    "changelogUrl": "https://raw.githubusercontent.com/Abdulkadiragoliya/spin-to-win/main/CHANGELOG.md",
+    "class": "abdulkadiragoliya\\spintowin\\SpinToWin",
+    "editions": [
+      {
+        "name": "Lite",
+        "handle": "lite",
+        "price": 69,
+        "renewalPrice": 29,
+        "features": [
+          "Interactive Wheel Builder",
+          "Custom Segment Labels & Colors",
+          "Center Logo Support",
+          "Modal Popup & Slide-in Sidebar Modes",
+          "Campaign Management & Status Controls",
+          "Server-Enforced Daily Spin Limits",
+          "Weighted Cryptographic RNG Prize Selection",
+          "Genuine Craft Commerce Coupon Generation",
+          "Standard Welcome & Result Screens"
+        ]
+      },
+      {
+        "name": "Plus",
+        "handle": "plus",
+        "price": 99,
+        "renewalPrice": 39,
+        "features": [
+          "All Lite Features",
+          "Advanced Wheel Layout & Particle Animations",
+          "Advanced Display Triggers (Scroll Threshold, Exit-Intent, Inactivity)",
+          "Campaign Start & End Scheduling (Date/Time)",
+          "Advanced Coupon Expiry Rules & Minimum Order Totals",
+          "Email Delivery with Customizable HTML Templates",
+          "Double Opt-In Email Verification Tokens",
+          "Comprehensive Analytics & Conversion Funnel",
+          "Safe CSV Report Streaming & Data Export",
+          "Multi-Site Assignment & Regional Targeting",
+          "Full Customer Localization & RTL Support"
+        ]
+      }
+    ]
+  }
+}

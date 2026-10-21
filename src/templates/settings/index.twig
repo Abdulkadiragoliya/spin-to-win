@@ -1,0 +1,76 @@
+{% extends "spin-to-win/_layouts/cp" %}
+{% import "_includes/forms.twig" as forms %}
+
+{% set selectedSubnavItem = 'settings' %}
+{% set title = 'Settings'|t('spin-to-win') %}
+
+{% set allSites = craft.app.sites.getAllSites() %}
+{% set isMultiSite = allSites|length > 1 %}
+{% set activeSite = activeSite ?? (selectedSiteId ? craft.app.sites.getSiteById(selectedSiteId) : craft.app.sites.currentSite) %}
+
+{% block actionButton %}
+    <button type="submit" form="settings-form" class="btn submit">{{ 'Save Settings'|t('app') }}</button>
+{% endblock %}
+
+{% block pageContent %}
+    {% if isMultiSite and isPlus %}
+        <!-- Dedicated Multi-Site Switcher Bar -->
+        <div style="background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%); border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 10px; background: #4f46e5; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);">
+                    🌐
+                </div>
+                <div>
+                    <div style="font-size: 15px; font-weight: 700; color: #0f172a;">
+                        {{ "Multi-Site Email & Delivery Settings"|t('spin-to-win') }}
+                    </div>
+                    <div style="font-size: 13px; color: #64748b; margin-top: 2px;">
+                        {{ "Currently editing settings for:"|t('spin-to-win') }} 
+                        <strong style="color: #4f46e5; font-size: 14px;">{{ activeSite.name }}</strong> (<code>{{ activeSite.handle }}</code>)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Site Switcher Buttons -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
+                    {{ "Select Site:"|t('spin-to-win') }}
+                </span>
+                <div style="display: flex; gap: 6px; background: #e2e8f0; padding: 4px; border-radius: 8px;">
+                    {% for s in allSites %}
+                        {% set isCurrent = activeSite and activeSite.id == s.id %}
+                        <a href="{{ cpUrl('spin-to-win/settings', { site: s.handle }) }}" 
+                           style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: {{ isCurrent ? '700' : '500' }}; text-decoration: none; transition: all 0.2s ease; {{ isCurrent ? 'background: #ffffff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1);' : 'color: #475569;' }}">
+                            <span>{{ isCurrent ? '✓' : '🌐' }}</span>
+                            <span>{{ s.name }}</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <form method="post" id="settings-form" accept-charset="UTF-8">
+        {{ csrfInput() }}
+        {{ actionInput('spin-to-win/settings/save') }}
+        {{ redirectInput('spin-to-win/settings?site=' ~ activeSite.handle) }}
+        <input type="hidden" name="siteHandle" value="{{ activeSite.handle }}">
+        <input type="hidden" name="siteId" value="{{ activeSite.id }}">
+
+        <div class="readable card" style="padding: 24px; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+            {% include "spin-to-win/settings/_plugin-settings" with {
+                siteValues: siteValues,
+                activeSite: activeSite
+            } %}
+
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+                <button type="submit" class="btn submit">{{ ('Save Settings for ' ~ activeSite.name)|t('spin-to-win') }}</button>
+                {% if isMultiSite %}
+                    <span style="font-size: 12px; color: #64748b;">
+                        {{ "Saving will update settings exclusively for "|t('spin-to-win') }} <strong>{{ activeSite.name }}</strong>.
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+{% endblock %}

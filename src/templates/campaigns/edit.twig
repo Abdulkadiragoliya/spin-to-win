@@ -1,0 +1,1975 @@
+{% extends "spin-to-win/_layouts/cp" %}
+{% import "_includes/forms.twig" as forms %}
+
+{% set selectedSubnavItem = 'campaigns' %}
+
+{% block actionButton %}
+    <div class="btngroup" style="display: flex; gap: 8px;">
+        <a href="{{ url('spin-to-win/campaigns') }}" class="btn">{{ 'Cancel'|t('spin-to-win') }}</a>
+        {% if campaign.id %}
+            <button type="button" class="btn error" onclick="if (confirm('{{ 'Are you sure you want to delete this campaign?'|t('spin-to-win')|e('js') }}')) { document.getElementById('delete-form').submit(); }">{{ 'Delete'|t('app') }}</button>
+        {% endif %}
+        <button type="submit" form="campaign-form" class="btn submit" onclick="const f = document.getElementById('campaign-form'); if (f) { f.requestSubmit ? f.requestSubmit() : f.submit(); }">{{ 'Save Campaign'|t('spin-to-win') }}</button>
+    </div>
+{% endblock %}
+
+{% block pageContent %}
+    <style>
+        .stw-builder-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .stw-nav-tabs {
+            display: flex;
+            gap: 4px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            width: fit-content;
+        }
+        .stw-tab-btn {
+            background: transparent;
+            border: none;
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .stw-tab-btn:hover {
+            color: #0f172a;
+            background: rgba(255, 255, 255, 0.6);
+        }
+        .stw-tab-btn.active {
+            background: #ffffff;
+            color: #4f46e5;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .stw-tab-pane {
+            display: none;
+        }
+        .stw-tab-pane.active {
+            display: block;
+        }
+        .stw-builder-grid {
+            display: grid;
+            grid-template-columns: 1fr 430px;
+            gap: 24px;
+            align-items: start;
+        }
+        @media (max-width: 1200px) {
+            .stw-builder-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .stw-pool-panel {
+            background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .stw-pool-summary-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 18px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .stw-slice-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 14px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .stw-slice-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+        }
+        .stw-slice-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .stw-slice-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: #334155;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .stw-slice-grid {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr 1.2fr 1.3fr;
+            gap: 12px;
+            align-items: end;
+        }
+        @media (max-width: 900px) {
+            .stw-slice-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .stw-color-swatch-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .stw-color-input {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            background: none;
+        }
+        .stw-field-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        .stw-input {
+            width: 100%;
+            padding: 7px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #0f172a;
+            background: #fff;
+            box-sizing: border-box;
+        }
+        .stw-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+        }
+        .stw-preview-sticky {
+            position: sticky;
+            top: 24px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .stw-wheel-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            margin: 0 auto 20px;
+            user-select: none;
+        }
+        .stw-wheel-pointer {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 28px;
+            height: 36px;
+            z-index: 20;
+            filter: drop-shadow(0 3px 4px rgba(0,0,0,0.3));
+            transition: transform 0.1s ease;
+        }
+        .stw-wheel-pointer.ticking {
+            transform: translateX(-50%) scale(1.15) rotate(6deg);
+        }
+        .stw-svg-wheel {
+            width: 100%;
+            height: 100%;
+            transform: rotate(0deg);
+            filter: drop-shadow(0 6px 16px rgba(0,0,0,0.12));
+            will-change: transform;
+        }
+        .stw-test-spin-btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+            transition: all 0.2s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .stw-test-spin-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.45);
+        }
+        .stw-test-spin-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .stw-result-banner {
+            margin-top: 16px;
+            padding: 14px;
+            border-radius: 8px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            font-size: 13px;
+            display: none;
+            text-align: left;
+            animation: stwFadeIn 0.3s ease;
+        }
+        @keyframes stwFadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .stw-preset-btn {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #475569;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.15s ease;
+        }
+        .stw-preset-btn:hover {
+            background: #ffffff;
+            color: #0f172a;
+            border-color: #94a3b8;
+        }
+        .stw-badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+    </style>
+
+    <div class="stw-builder-wrap">
+        <!-- Tab Bar -->
+        <div class="stw-nav-tabs">
+            <button type="button" class="stw-tab-btn active" data-tab="tab-general">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                {{ "General & Triggers"|t('spin-to-win') }}
+            </button>
+            <button type="button" class="stw-tab-btn" data-tab="tab-copy">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                {{ "Welcome & Result Text"|t('spin-to-win') }}
+            </button>
+            <button type="button" class="stw-tab-btn" data-tab="tab-wheel">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07L19.07 4.93"/></svg>
+                {{ "Prize Wheel & Slices"|t('spin-to-win') }}
+            </button>
+            <button type="button" class="stw-tab-btn" data-tab="tab-rules">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                {{ "Limits & Scheduling"|t('spin-to-win') }}
+            </button>
+        </div>
+
+        <form method="post" id="campaign-form" accept-charset="UTF-8" novalidate>
+            {{ csrfInput() }}
+            {{ actionInput('spin-to-win/campaigns/save') }}
+            {{ redirectInput('spin-to-win/campaigns') }}
+            {% if campaign.id %}<input type="hidden" name="id" value="{{ campaign.id }}">{% endif %}
+
+            <!-- TAB 3: PRIZE WHEEL & SLICES BUILDER -->
+            <div id="tab-wheel" class="stw-tab-pane">
+                <div class="stw-builder-grid">
+                    <!-- Left: Pool Settings, Slices & Wheel Customization -->
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+
+                        <!-- PROBABILITY SPIN POOL CONFIGURATION PANEL -->
+                        <div class="stw-pool-panel">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">
+                                            {{ "Probability Spin Pool Configuration"|t('spin-to-win') }}
+                                        </h3>
+                                        <span class="stw-badge-pill" style="background: #e0e7ff; color: #4338ca;">
+                                            {{ "Pool Cycle"|t('spin-to-win') }} #{{ campaign.poolCycle|default(1) }}
+                                        </span>
+                                    </div>
+                                    <p style="margin: 4px 0 0; font-size: 12px; color: #64748b; line-height: 1.4;">
+                                        {{ "Set the total spin pool size. Each slice's win probability (%) is calculated automatically from its allocated prizes per pool."|t('spin-to-win') }}
+                                    </p>
+                                </div>
+
+                                <div style="display: flex; gap: 6px; align-items: center;">
+                                    <span style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase;">Quick Pool:</span>
+                                    <button type="button" class="stw-preset-btn" onclick="setQuickPool(100)">100</button>
+                                    <button type="button" class="stw-preset-btn" onclick="setQuickPool(1000)">1,000</button>
+                                    <button type="button" class="stw-preset-btn" onclick="setQuickPool(5000)">5,000</button>
+                                    <button type="button" class="stw-preset-btn" onclick="setQuickPool(10000)">10,000</button>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1.6fr 1fr; gap: 16px; align-items: start;">
+                                <!-- Pool Size Input -->
+                                <div>
+                                    <label class="stw-field-label" for="spinPoolSize">
+                                        {{ "Probability Spin Pool (Total Spins)"|t('spin-to-win') }}
+                                    </label>
+                                    <input type="number" min="10" max="1000000" step="1" id="spinPoolSize" name="spinPoolSize" class="stw-input" value="{{ campaign.spinPoolSize|default(1000) }}" style="font-size: 15px; font-weight: 700; color: #4338ca;" required>
+                                    <span style="font-size: 11px; color: #64748b; display: block; margin-top: 4px;">{{ "e.g., 100, 1,000, 10,000 spins"|t('spin-to-win') }}</span>
+                                </div>
+
+                                <!-- Allocation Mode -->
+                                <div>
+                                    <label class="stw-field-label">
+                                        {{ "Prize Allocation Mode"|t('spin-to-win') }}
+                                    </label>
+                                    <select id="allocationMode" name="allocationMode" class="stw-input" onchange="onAllocationModeChange()">
+                                        <option value="quota_guaranteed" {% if campaign.allocationMode == 'quota_guaranteed' or not campaign.allocationMode %}selected{% endif %}>
+                                            {{ "Guaranteed Quota Mode (Strict Prize Distribution)"|t('spin-to-win') }}
+                                        </option>
+                                        <option value="probability_random" {% if campaign.allocationMode == 'probability_random' %}selected{% endif %}>
+                                            {{ "Probability Random Mode (Independent Probability Roll)"|t('spin-to-win') }}
+                                        </option>
+                                    </select>
+                                    <span id="allocationModeDesc" style="font-size: 11px; color: #64748b; display: block; margin-top: 4px; line-height: 1.3;">
+                                        {% if campaign.allocationMode == 'probability_random' %}
+                                            {{ "Each spin independently rolls against the calculated probability (Prizes / Pool). Quotas are not strictly capped."|t('spin-to-win') }}
+                                        {% else %}
+                                            {{ "Exact prize counts are strictly awarded within each completed pool of spins. Won prizes are depleted until the pool finishes."|t('spin-to-win') }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+
+                                <!-- Pool Strategy -->
+                                <div>
+                                    <label class="stw-field-label" for="poolStrategy">
+                                        {{ "Pool Cycle Action"|t('spin-to-win') }}
+                                    </label>
+                                    <select id="poolStrategy" name="poolStrategy" class="stw-input">
+                                        <option value="rollover" {% if campaign.poolStrategy == 'rollover' or not campaign.poolStrategy %}selected{% endif %}>
+                                            {{ "Rollover & Replenish Quotas"|t('spin-to-win') }}
+                                        </option>
+                                        <option value="reset" {% if campaign.poolStrategy == 'reset' %}selected{% endif %}>
+                                            {{ "Strict Cycle Reset"|t('spin-to-win') }}
+                                        </option>
+                                    </select>
+                                    <span style="font-size: 11px; color: #64748b; display: block; margin-top: 4px;">{{ "Action when pool reaches zero"|t('spin-to-win') }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slices Management Card -->
+                        <div class="card" style="padding: 24px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+
+                            <!-- Real-time Pool Allocation Summary Bar -->
+                            <div class="stw-pool-summary-bar" id="pool-summary-bar">
+                                <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                                    <div>
+                                        <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: #64748b; display: block;">{{ "Pool Allocation"|t('spin-to-win') }}</span>
+                                        <span style="font-size: 14px; font-weight: 700; color: #0f172a;">
+                                            <span id="disp-total-allocated">1,000</span> / <span id="disp-pool-size">1,000</span> prizes (<span id="disp-allocated-pct">100.0%</span>)
+                                        </span>
+                                    </div>
+                                    <div style="border-left: 1px solid #e2e8f0; padding-left: 14px;">
+                                        <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: #64748b; display: block;">{{ "Remaining Unallocated"|t('spin-to-win') }}</span>
+                                        <span id="disp-remaining-spins" style="font-size: 14px; font-weight: 700; color: #10b981;">0 spins</span>
+                                    </div>
+                                    <span id="pool-status-badge" class="stw-badge-pill" style="background: #dcfce7; color: #166534; font-size: 12px; padding: 4px 10px;">
+                                        ✔ {{ "Pool Perfectly Balanced (100%)"|t('spin-to-win') }}
+                                    </span>
+                                </div>
+
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                                    <button type="button" class="btn small" onclick="autoBalancePool()" style="display: flex; align-items: center; gap: 4px; font-weight: 600; background: #f8fafc; border: 1px solid #cbd5e1; color: #334155;">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                                        {{ "Auto-balance to No-Prize Slice"|t('spin-to-win') }}
+                                    </button>
+                                    <div id="overallocation-actions" style="display: none; gap: 6px; align-items: center;">
+                                        <button type="button" class="btn small" onclick="scalePrizesToPool()" style="font-weight: 600; color: #b91c1c; background: #fee2e2; border: 1px solid #fca5a5;">
+                                            {{ "Scale Prizes to Fit Pool"|t('spin-to-win') }}
+                                        </button>
+                                        <button type="button" id="btn-match-pool" class="btn small" onclick="matchPoolToPrizes()" style="font-weight: 600; color: #0369a1; background: #e0f2fe; border: 1px solid #bae6fd;">
+                                            {{ "Match Pool to Prizes"|t('spin-to-win') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid #f1f5f9;">
+                                <div>
+                                    <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 600; color: #0f172a;">
+                                        {{ "Wheel Slices & Prize Quotas"|t('spin-to-win') }}
+                                    </h3>
+                                    <p style="margin: 0; font-size: 12px; color: #64748b;">
+                                        <span id="slice-count-badge">{{ segments|length }}</span> {{ "slices configured"|t('spin-to-win') }}
+                                        &bull; {{ "Formula: Win Probability (%) = (Prizes in Pool / Total Pool) × 100"|t('spin-to-win') }}
+                                    </p>
+                                </div>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <div style="display: flex; gap: 4px; align-items: center;">
+                                        <span style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Palettes:</span>
+                                        <button type="button" class="stw-preset-btn" onclick="applyPreset('rainbow')">Rainbow</button>
+                                        <button type="button" class="stw-preset-btn" onclick="applyPreset('gold')">Gold</button>
+                                        <button type="button" class="stw-preset-btn" onclick="applyPreset('ocean')">Ocean</button>
+                                        <button type="button" class="stw-preset-btn" onclick="applyPreset('candy')">Candy</button>
+                                    </div>
+                                    <button type="button" class="btn small" onclick="addNewSlice()" style="display: flex; align-items: center; gap: 4px; font-weight: 600;">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                        {{ "Add Slice"|t('spin-to-win') }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Slices Container -->
+                            <div id="slices-container">
+                                {% for segment in segments %}
+                                    {% set idx = loop.index0 %}
+                                    {% set poolSize = campaign.spinPoolSize|default(1000) %}
+                                    {% set probPct = poolSize > 0 ? ((segment.allocatedCount / poolSize) * 100)|round(3) : 0 %}
+                                    <div class="stw-slice-card" data-index="{{ idx }}" {% if not segment.isEnabled %}style="opacity: 0.55; background: #f8fafc;"{% endif %}>
+                                        {% if segment.id %}<input type="hidden" name="segments[{{ idx }}][id]" value="{{ segment.id }}">{% endif %}
+                                        <input type="hidden" name="segments[{{ idx }}][sortOrder]" class="slice-sort-order" value="{{ idx }}">
+                                        <input type="hidden" name="segments[{{ idx }}][awardedCount]" value="{{ segment.awardedCount|default(0) }}">
+                                        <input type="hidden" name="segments[{{ idx }}][poolAwardedCount]" value="{{ segment.poolAwardedCount|default(0) }}">
+
+                                        <!-- Header row of slice card -->
+                                        <div class="stw-slice-header">
+                                            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                                <span class="stw-slice-badge">{{ loop.index }}</span>
+                                                <input type="text" name="segments[{{ idx }}][label]" class="stw-input slice-label-input" value="{{ segment.label }}" placeholder="Slice Label (e.g. 10% discount)" style="font-weight: 600; width: 220px;" required>
+                                                <!-- Calculated Probability Badge -->
+                                                <span class="slice-prob-badge stw-badge-pill" style="{% if segment.isEnabled %}background: #e0e7ff; color: #4338ca;{% else %}background: #f1f5f9; color: #64748b;{% endif %} font-size: 11px;">
+                                                    {% if segment.isEnabled %}
+                                                        {{ probPct }}% {{ "win probability"|t('spin-to-win') }}
+                                                    {% else %}
+                                                        {{ "Inactive (Excluded)"|t('spin-to-win') }}
+                                                    {% endif %}
+                                                </span>
+                                                {% if segment.id and segment.allocatedCount > 0 and segment.isEnabled %}
+                                                    <span style="font-size: 11px; color: #64748b;">
+                                                        ({{ "Awarded in Pool:"|t('spin-to-win') }} <strong>{{ segment.poolAwardedCount|default(0) }}</strong>/{{ segment.allocatedCount }})
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <div style="display: flex; align-items: center; gap: 4px;">
+                                                    <button type="button" class="stw-preset-btn" title="Move Up" onclick="moveSlice({{ idx }}, -1)">▲</button>
+                                                    <button type="button" class="stw-preset-btn" title="Move Down" onclick="moveSlice({{ idx }}, 1)">▼</button>
+                                                </div>
+                                                <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #475569; margin: 0; cursor: pointer;">
+                                                    <input type="hidden" name="segments[{{ idx }}][isEnabled]" value="0">
+                                                    <input type="checkbox" name="segments[{{ idx }}][isEnabled]" value="1" class="slice-enabled-toggle" onchange="onSliceToggle(this)" {% if segment.isEnabled %}checked{% endif %}>
+                                                    {{ "Active"|t('spin-to-win') }}
+                                                </label>
+                                                <button type="button" class="stw-preset-btn" style="color: #ef4444; border-color: #fecaca; background: #fef2f2;" title="Delete slice" onclick="deleteSlice({{ idx }})">✕</button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Detail Grid -->
+                                        <div class="stw-slice-grid">
+                                            <div>
+                                                <label class="stw-field-label">{{ "Prize Type"|t('spin-to-win') }}</label>
+                                                <select name="segments[{{ idx }}][rewardType]" class="stw-input slice-reward-type" onchange="onRewardTypeChange(this)">
+                                                    <option value="percent_discount" {% if segment.rewardType == 'percent_discount' %}selected{% endif %}>{{ "Percent Discount (%)"|t('spin-to-win') }}</option>
+                                                    <option value="fixed_discount" {% if segment.rewardType == 'fixed_discount' %}selected{% endif %}>{{ "Fixed Amount ($)"|t('spin-to-win') }}</option>
+                                                    <option value="free_shipping" {% if segment.rewardType == 'free_shipping' %}selected{% endif %}>{{ "Free Shipping"|t('spin-to-win') }}</option>
+                                                    <option value="no_prize" {% if segment.rewardType == 'no_prize' %}selected{% endif %}>{{ "No Prize / Loss"|t('spin-to-win') }}</option>
+                                                    <option value="custom" {% if segment.rewardType == 'custom' %}selected{% endif %}>{{ "Free Product / Custom"|t('spin-to-win') }}</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="discount-val-wrap" {% if segment.rewardType in ['no_prize', 'free_shipping'] %}style="opacity: 0.5;"{% endif %}>
+                                                <label class="stw-field-label">{{ "Discount Value"|t('spin-to-win') }}</label>
+                                                <input type="number" step="0.01" min="0" name="segments[{{ idx }}][discountValue]" class="stw-input slice-discount-value" value="{{ segment.discountValue }}">
+                                            </div>
+
+                                            <!-- Number of Prizes per Probability Pool -->
+                                            <div>
+                                                <label class="stw-field-label slice-pool-prizes-label">
+                                                    {{ "Prizes in Pool"|t('spin-to-win') }}
+                                                </label>
+                                                <input type="number" min="0" max="1000000" name="segments[{{ idx }}][allocatedCount]" class="stw-input slice-allocated-input" value="{{ segment.allocatedCount }}" style="font-weight: 700; color: #4338ca;">
+                                                <input type="hidden" name="segments[{{ idx }}][probabilityWeight]" class="slice-weight-input" value="{{ segment.allocatedCount }}">
+                                            </div>
+
+                                            <div>
+                                                <label class="stw-field-label">{{ "Colors (Slice & Text)"|t('spin-to-win') }}</label>
+                                                <div class="stw-color-swatch-wrap">
+                                                    <input type="color" name="segments[{{ idx }}][color]" class="stw-color-input slice-bg-color" value="{{ segment.color }}" title="Slice background color">
+                                                    <input type="color" name="segments[{{ idx }}][textColor]" class="stw-color-input slice-text-color" value="{{ segment.textColor }}" title="Slice text color">
+                                                    <input type="number" min="0" max="365" name="segments[{{ idx }}][couponDurationDays]" class="stw-input" value="{{ segment.couponDurationDays }}" placeholder="Days" title="Days valid" style="width: 65px;">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Wheel Visual Styling Settings Card -->
+                        <div class="card" style="padding: 24px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                            <h3 style="margin: 0 0 16px; font-size: 15px; font-weight: 600; color: #0f172a; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+                                {{ "Wheel Visual Customization & Center Hub"|t('spin-to-win') }}
+                            </h3>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+                                <div>
+                                    <label class="stw-field-label">{{ "Center Hub Text"|t('spin-to-win') }}</label>
+                                    <input type="text" id="hubText" name="wheelSettings[hubText]" class="stw-input" value="{{ wheelSettings.hubText|default('SPIN') }}" maxlength="10">
+                                </div>
+                                <div>
+                                    <label class="stw-field-label">{{ "Center Hub Color"|t('spin-to-win') }}</label>
+                                    <div class="stw-color-swatch-wrap">
+                                        <input type="color" id="hubColor" name="wheelSettings[hubColor]" class="stw-color-input" value="{{ wheelSettings.hubColor|default('#ffffff') }}">
+                                        <input type="color" id="hubTextColor" name="wheelSettings[hubTextColor]" class="stw-color-input" value="{{ wheelSettings.hubTextColor|default('#0f172a') }}" title="Hub text color">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="stw-field-label">{{ "Pointer / Ticker Color"|t('spin-to-win') }}</label>
+                                    <div class="stw-color-swatch-wrap">
+                                        <input type="color" id="pointerColor" name="wheelSettings[pointerColor]" class="stw-color-input" value="{{ wheelSettings.pointerColor|default('#ef4444') }}">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="stw-field-label">{{ "Outer Rim Color"|t('spin-to-win') }}</label>
+                                    <div class="stw-color-swatch-wrap">
+                                        <input type="color" id="rimColor" name="wheelSettings[rimColor]" class="stw-color-input" value="{{ wheelSettings.rimColor|default('#1e293b') }}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card / Drawer Theme & Typography Colors -->
+                        <div class="card" style="padding: 24px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04); margin-top: 20px;">
+                            <h3 style="margin: 0 0 16px; font-size: 15px; font-weight: 600; color: #0f172a; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+                                {{ "Widget & Card Theme Colors"|t('spin-to-win') }}
+                            </h3>
+                            <p style="font-size: 12px; color: #64748b; margin-top: -8px; margin-bottom: 16px;">
+                                {{ "Customize modal card background, text colors, inputs, and button styling to perfectly match your storefront theme."|t('spin-to-win') }}
+                            </p>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                                <div>
+                                    <label class="stw-field-label">{{ "Modal / Panel Background"|t('spin-to-win') }}</label>
+                                    <div class="stw-color-swatch-wrap">
+                                        <input type="color" id="panelBgColor" name="wheelSettings[panelBgColor]" class="stw-color-input" value="{{ wheelSettings.panelBgColor|default('#ffffff') }}">
+                                        <span style="font-size: 12px; color: #64748b;" id="lbl-panelBgColor">{{ wheelSettings.panelBgColor|default('#ffffff') }}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="stw-field-label">{{ "Headline Color"|t('spin-to-win') }}</label>
+                                    <div class="stw-color-swatch-wrap">
+                                        <input type="color" id="headlineColor" name="wheelSettings[headlineColor]" class="stw-color-input" value="{{ wheelSettings.headlineColor|default('#0f172a') }}">
+                                        <span style="font-size: 12px; color: #64748b;" id="lbl-headlineColor">{{ wheelSettings.headlineColor|default('#0f172a') }}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="stw-field-label">{{ "Subtitle / Description Color"|t('spin-to-win') }}</label>
+                                    <div class="stw-color-swatch-wrap">
+                                        <input type="color" id="subtextColor" name="wheelSettings[subtextColor]" class="stw-color-input" value="{{ wheelSettings.subtextColor|default('#64748b') }}">
+                                        <span style="font-size: 12px; color: #64748b;" id="lbl-subtextColor">{{ wheelSettings.subtextColor|default('#64748b') }}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="stw-field-label">{{ "Input Field Background"|t('spin-to-win') }}</label>
+                                    <div class="stw-color-swatch-wrap">
+                                        <input type="color" id="inputBgColor" name="wheelSettings[inputBgColor]" class="stw-color-input" value="{{ wheelSettings.inputBgColor|default('#ffffff') }}">
+                                        <span style="font-size: 12px; color: #64748b;" id="lbl-inputBgColor">{{ wheelSettings.inputBgColor|default('#ffffff') }}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="stw-field-label">{{ "Input Field Border"|t('spin-to-win') }}</label>
+                                    <div class="stw-color-swatch-wrap">
+                                        <input type="color" id="inputBorderColor" name="wheelSettings[inputBorderColor]" class="stw-color-input" value="{{ wheelSettings.inputBorderColor|default('#cbd5e1') }}">
+                                        <span style="font-size: 12px; color: #64748b;" id="lbl-inputBorderColor">{{ wheelSettings.inputBorderColor|default('#cbd5e1') }}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="stw-field-label">{{ "Input Field Text Color"|t('spin-to-win') }}</label>
+                                    <div class="stw-color-swatch-wrap">
+                                        <input type="color" id="inputTextColor" name="wheelSettings[inputTextColor]" class="stw-color-input" value="{{ wheelSettings.inputTextColor|default('#0f172a') }}">
+                                        <span style="font-size: 12px; color: #64748b;" id="lbl-inputTextColor">{{ wheelSettings.inputTextColor|default('#0f172a') }}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="stw-field-label">{{ "Button Background Color"|t('spin-to-win') }}</label>
+                                    <div class="stw-color-swatch-wrap">
+                                        <input type="color" id="buttonBgColor" name="wheelSettings[buttonBgColor]" class="stw-color-input" value="{{ wheelSettings.buttonBgColor|default('#4f46e5') }}">
+                                        <span style="font-size: 12px; color: #64748b;" id="lbl-buttonBgColor">{{ wheelSettings.buttonBgColor|default('#4f46e5') }}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="stw-field-label">{{ "Button Text Color"|t('spin-to-win') }}</label>
+                                    <div class="stw-color-swatch-wrap">
+                                        <input type="color" id="buttonTextColor" name="wheelSettings[buttonTextColor]" class="stw-color-input" value="{{ wheelSettings.buttonTextColor|default('#ffffff') }}">
+                                        <span style="font-size: 12px; color: #64748b;" id="lbl-buttonTextColor">{{ wheelSettings.buttonTextColor|default('#ffffff') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Sticky Live Preview & Test Spin Simulator -->
+                    <div>
+                        <div class="stw-preview-sticky">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 6px;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
+                                    <strong style="font-size: 13px; color: #0f172a;">{{ "Live Wheel Preview"|t('spin-to-win') }}</strong>
+                                </div>
+                                <span id="preview-mode-pill" class="stw-badge-pill" style="background: #e0f2fe; color: #0369a1;">
+                                    {{ campaign.allocationMode == 'probability_random' ? "Random Mode"|t('spin-to-win') : "Guaranteed Quota"|t('spin-to-win') }}
+                                </span>
+                            </div>
+
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 12px;" id="sim-pool-tracker">
+                                {{ "Simulation Pool Remaining:"|t('spin-to-win') }} <strong id="sim-remaining-spins">{{ (campaign.spinPoolSize|default(1000))|number }}</strong> / <span id="sim-total-spins">{{ (campaign.spinPoolSize|default(1000))|number }}</span>
+                            </div>
+
+                            <!-- Interactive Wheel Container -->
+                            <div class="stw-wheel-container">
+                                <!-- Top Pointer / Ticker -->
+                                <div class="stw-wheel-pointer" id="wheel-pointer">
+                                    <svg viewBox="0 0 28 36" width="28" height="36" fill="none">
+                                        <path d="M14 36 L2 6 A 4 4 0 0 1 6 2 L22 2 A 4 4 0 0 1 26 6 Z" id="pointer-svg-path" fill="{{ wheelSettings.pointerColor|default('#ef4444') }}" stroke="#ffffff" stroke-width="2"/>
+                                        <circle cx="14" cy="8" r="3.5" fill="#ffffff" opacity="0.9"/>
+                                    </svg>
+                                </div>
+
+                                <!-- Live Rotating SVG Wheel -->
+                                <svg id="svg-wheel" class="stw-svg-wheel" viewBox="0 0 400 400">
+                                    <!-- Rendered dynamically by JavaScript -->
+                                </svg>
+                            </div>
+
+                            <!-- Test Simulator Controls -->
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <button type="button" id="btn-test-spin" class="stw-test-spin-btn" onclick="executeTestSpin()">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                    {{ "Test Spin Simulator"|t('spin-to-win') }}
+                                </button>
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="button" class="btn small fullwidth" onclick="resetSimPool()" style="color: #4338ca; font-weight: 600;">
+                                        {{ "Reset Test Quotas"|t('spin-to-win') }}
+                                    </button>
+                                    <button type="button" class="btn small fullwidth" onclick="resetWheelPosition()" style="color: #64748b;">
+                                        {{ "Reset Wheel"|t('spin-to-win') }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Simulation Winner Banner -->
+                            <div id="simulation-result" class="stw-result-banner">
+                                <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;" id="sim-winner-title">🎉 Winner: 10% discount!</div>
+                                <div id="sim-winner-desc" style="font-size: 12px; margin-bottom: 6px;">Reward: 10% Off Coupon</div>
+                                <div id="sim-winner-odds" style="font-size: 12px; font-weight: 600; color: #1e40af; margin-bottom: 6px;"></div>
+                                <div id="sim-winner-quota-info" style="font-size: 11px; color: #475569; margin-bottom: 6px; padding-top: 4px; border-top: 1px dashed #cbd5e1;"></div>
+                                <div style="font-size: 11px; opacity: 0.8; font-style: italic;">
+                                    {{ "Safe simulation mode: No customer record or Commerce coupon created."|t('spin-to-win') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 1: GENERAL & TRIGGERS -->
+            <div id="tab-general" class="stw-tab-pane active">
+                <div style="max-width: 800px; display: flex; flex-direction: column; gap: 24px;">
+                    <div class="card" style="padding: 24px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                        <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #0f172a; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+                            {{ "General Information"|t('spin-to-win') }}
+                        </h3>
+
+                        {{ forms.textField({
+                            label: "Campaign Name"|t('spin-to-win'),
+                            instructions: "Internal campaign name (e.g., Black Friday Prize Wheel)."|t('spin-to-win'),
+                            id: 'name',
+                            name: 'name',
+                            value: campaign.name,
+                            errors: campaign.getErrors('name'),
+                            required: true
+                        }) }}
+
+                        {{ forms.textField({
+                            label: "Campaign Handle"|t('spin-to-win'),
+                            instructions: "Unique identifier for this campaign (letters, numbers, dashes, underscores)."|t('spin-to-win'),
+                            id: 'handle',
+                            name: 'handle',
+                            value: campaign.handle,
+                            errors: campaign.getErrors('handle'),
+                            required: true
+                        }) }}
+
+                        {{ forms.textareaField({
+                            label: "Description"|t('spin-to-win'),
+                            instructions: "Optional internal notes about this promotional campaign."|t('spin-to-win'),
+                            id: 'description',
+                            name: 'description',
+                            value: campaign.description,
+                            rows: 2
+                        }) }}
+
+                        {{ forms.lightswitchField({
+                            label: "Enable Campaign"|t('spin-to-win'),
+                            instructions: "Make this wheel active and visible on storefront pages."|t('spin-to-win'),
+                            id: 'enabled',
+                            name: 'enabled',
+                            on: campaign.enabled
+                        }) }}
+
+                        {% set allSites = craft.app.sites.getAllSites() %}
+                        {% if allSites|length > 1 %}
+                            {% if isPlus %}
+                                {% set siteOptions = [{ label: "All Sites (Global)"|t('spin-to-win'), value: '' }] %}
+                                {% for s in allSites %}
+                                    {% set siteOptions = siteOptions|merge([{ label: s.name ~ ' (' ~ s.handle ~ ')', value: s.id }]) %}
+                                {% endfor %}
+                                {{ forms.selectField({
+                                    label: "Target Site"|t('spin-to-win'),
+                                    instructions: "Assign this promotional wheel to a specific site in your multi-site setup, or run across All Sites."|t('spin-to-win'),
+                                    id: 'siteId',
+                                    name: 'siteId',
+                                    value: campaign.siteId|default(''),
+                                    options: siteOptions
+                                }) }}
+                            {% else %}
+                                <div class="field">
+                                    <div class="heading">
+                                        <label>{{ "Target Site"|t('spin-to-win') }}</label>
+                                        <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">{{ "Plus Edition"|t('spin-to-win') }}</span>
+                                        <div class="instructions">
+                                            <p>{{ "Multi-site targeting is a Plus feature. In Lite Edition, campaigns run on the primary site."|t('spin-to-win') }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="input">
+                                        <input type="text" class="text fullwidth disabled" disabled value="{{ craft.app.sites.primarySite.name }} ({{ craft.app.sites.primarySite.handle }})">
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+
+                    <div class="card" style="padding: 24px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                        <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #0f172a; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+                            {{ "Display Mode & Presentation"|t('spin-to-win') }}
+                        </h3>
+
+                        {{ forms.selectField({
+                            label: "Display Mode"|t('spin-to-win'),
+                            instructions: "How the wheel is presented to storefront visitors."|t('spin-to-win'),
+                            id: 'displayMode',
+                            name: 'displayMode',
+                            value: campaign.displayMode,
+                            options: [
+                                { label: "Modal Popup"|t('spin-to-win'), value: 'popup' },
+                                { label: "Slide-in Sidebar Panel"|t('spin-to-win'), value: 'sidebar' }
+                            ]
+                        }) }}
+
+                        <div id="sidebar-position-field" style="margin-top: -6px; margin-bottom: 18px; {% if campaign.displayMode != 'sidebar' %}display: none;{% endif %}">
+                            {{ forms.selectField({
+                                label: "Sidebar Slide-in Position"|t('spin-to-win'),
+                                instructions: "Where the sidebar animates in from (Desktop: Left side default, Mobile: Top)."|t('spin-to-win'),
+                                id: 'sidebarPosition',
+                                name: 'wheelSettings[sidebarPosition]',
+                                value: wheelSettings.sidebarPosition|default('left'),
+                                options: [
+                                    { label: "Left Side (Slides in from Left for desktop, Top for mobile)"|t('spin-to-win'), value: 'left' },
+                                    { label: "Top (Slides down from Top for all devices)"|t('spin-to-win'), value: 'top' },
+                                    { label: "Right Side (Slides in from Right for desktop, Top for mobile)"|t('spin-to-win'), value: 'right' }
+                                ]
+                            }) }}
+                        </div>
+
+                        {{ forms.selectField({
+                            label: "Trigger Type"|t('spin-to-win'),
+                            instructions: "When the wheel appears on the visitor's screen."|t('spin-to-win'),
+                            id: 'triggerType',
+                            name: 'triggerType',
+                            value: campaign.triggerType,
+                            options: [
+                                { label: "Immediately on Page Load"|t('spin-to-win'), value: 'load' },
+                                { label: "Timed Delay (After X seconds)"|t('spin-to-win'), value: 'delay' },
+                                { label: "Scroll Depth Threshold (%)"|t('spin-to-win'), value: 'scroll' },
+                                { label: "Manual Trigger (Button/Link click)"|t('spin-to-win'), value: 'manual' }
+                            ]
+                        }) }}
+
+                        <div id="delay-field">
+                            {{ forms.textField({
+                                label: "Trigger Delay (Seconds)"|t('spin-to-win'),
+                                instructions: "Seconds to wait after page load before displaying the wheel."|t('spin-to-win'),
+                                id: 'triggerDelay',
+                                name: 'triggerDelay',
+                                type: 'number',
+                                value: campaign.triggerDelay,
+                                errors: campaign.getErrors('triggerDelay')
+                            }) }}
+                        </div>
+
+                        <div id="scroll-field">
+                            {{ forms.textField({
+                                label: "Scroll Depth Threshold (%)"|t('spin-to-win'),
+                                instructions: "Percentage of the page scrolled down before opening the wheel."|t('spin-to-win'),
+                                id: 'scrollThreshold',
+                                name: 'scrollThreshold',
+                                type: 'number',
+                                value: campaign.scrollThreshold,
+                                errors: campaign.getErrors('scrollThreshold')
+                            }) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: WELCOME & RESULT TEXT -->
+            <div id="tab-copy" class="stw-tab-pane">
+                <div style="max-width: 800px; display: flex; flex-direction: column; gap: 24px;">
+                    <div class="card" style="padding: 24px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                        <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #0f172a; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+                            {{ "Welcome Screen Copy"|t('spin-to-win') }}
+                        </h3>
+
+                        {{ forms.textField({
+                            label: "Welcome Title"|t('spin-to-win'),
+                            instructions: "Primary headline shown when the visitor opens the wheel."|t('spin-to-win'),
+                            id: 'welcomeTitle',
+                            name: 'welcomeTitle',
+                            value: campaign.welcomeTitle
+                        }) }}
+
+                        {{ forms.textareaField({
+                            label: "Welcome Message"|t('spin-to-win'),
+                            instructions: "Engaging promotional copy shown before spinning."|t('spin-to-win'),
+                            id: 'welcomeText',
+                            name: 'welcomeText',
+                            value: campaign.welcomeText,
+                            rows: 2
+                        }) }}
+
+                        {{ forms.textField({
+                            label: "Spin Button Label"|t('spin-to-win'),
+                            instructions: "Call-to-action button text."|t('spin-to-win'),
+                            id: 'buttonText',
+                            name: 'buttonText',
+                            value: campaign.buttonText
+                        }) }}
+                    </div>
+
+                    <div class="card" style="padding: 24px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                        <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #0f172a; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+                            {{ "Result Screen Copy"|t('spin-to-win') }}
+                        </h3>
+
+                        {{ forms.textField({
+                            label: "Result Screen Title"|t('spin-to-win'),
+                            instructions: "Headline shown on winning a prize."|t('spin-to-win'),
+                            id: 'resultTitle',
+                            name: 'resultTitle',
+                            value: campaign.resultTitle
+                        }) }}
+
+                        {{ forms.textareaField({
+                            label: "Result Screen Message"|t('spin-to-win'),
+                            instructions: "Instructions shown alongside the generated coupon code."|t('spin-to-win'),
+                            id: 'resultText',
+                            name: 'resultText',
+                            value: campaign.resultText,
+                            rows: 2
+                        }) }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: LIMITS, GDPR & SCHEDULING -->
+            <div id="tab-rules" class="stw-tab-pane">
+                <div style="max-width: 800px; display: flex; flex-direction: column; gap: 24px;">
+                    <div class="card" style="padding: 24px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                        <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #0f172a; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+                            {{ "Spin Limit Policy"|t('spin-to-win') }}
+                        </h3>
+
+                        {{ forms.selectField({
+                            label: "Limit Policy"|t('spin-to-win'),
+                            instructions: "How often a visitor can spin the wheel."|t('spin-to-win'),
+                            id: 'spinLimitPolicy',
+                            name: 'spinLimitPolicy',
+                            value: campaign.spinLimitPolicy,
+                            options: [
+                                { label: "1 Spin per Email per Day (Recommended)"|t('spin-to-win'), value: 'daily_per_email' },
+                                { label: "1 Spin per Campaign Lifetime"|t('spin-to-win'), value: 'once_per_campaign' },
+                                { label: "Unlimited Spins (Testing only)"|t('spin-to-win'), value: 'unlimited' }
+                            ]
+                        }) }}
+
+                        {{ forms.lightswitchField({
+                            label: "Require Name"|t('spin-to-win'),
+                            instructions: "Ask for the customer's name in addition to email."|t('spin-to-win'),
+                            id: 'requireName',
+                            name: 'requireName',
+                            on: campaign.requireName
+                        }) }}
+
+                        {{ forms.lightswitchField({
+                            label: "Require GDPR Consent"|t('spin-to-win'),
+                            instructions: "Require explicit checkbox consent before spinning."|t('spin-to-win'),
+                            id: 'requireConsent',
+                            name: 'requireConsent',
+                            on: campaign.requireConsent
+                        }) }}
+
+                        {{ forms.textareaField({
+                            label: "Consent Text"|t('spin-to-win'),
+                            id: 'consentText',
+                            name: 'consentText',
+                            value: campaign.consentText,
+                            rows: 2
+                        }) }}
+                    </div>
+
+                    <!-- Scheduling (Plus Edition) -->
+                    <div class="card" style="padding: 24px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #0f172a;">
+                                {{ "Campaign Scheduling"|t('spin-to-win') }}
+                            </h3>
+                            {% if not isPlus %}
+                                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 4px;">{{ "Plus Edition"|t('spin-to-win') }}</span>
+                            {% endif %}
+                        </div>
+
+                        {% if isPlus %}
+                            {{ forms.dateTimeField({
+                                label: "Start Date & Time"|t('spin-to-win'),
+                                instructions: "When the campaign becomes visible."|t('spin-to-win'),
+                                id: 'startDate',
+                                name: 'startDate',
+                                value: campaign.startDate
+                            }) }}
+
+                            {{ forms.dateTimeField({
+                                label: "End Date & Time"|t('spin-to-win'),
+                                instructions: "When the campaign automatically expires."|t('spin-to-win'),
+                                id: 'endDate',
+                                name: 'endDate',
+                                value: campaign.endDate
+                            }) }}
+                        {% else %}
+                            <p style="font-size: 13px; color: #64748b; margin: 0; line-height: 1.5;">
+                                {{ "Start and end scheduling is available in the Plus edition. Lite campaigns remain active whenever the Enabled switch is ON."|t('spin-to-win') }}
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Save / Cancel Actions -->
+            <div style="margin-top: 24px; padding: 16px 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; justify-content: flex-end; align-items: center; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                <a href="{{ url('spin-to-win/campaigns') }}" class="btn">{{ 'Cancel'|t('spin-to-win') }}</a>
+                <button type="submit" class="btn submit">{{ 'Save Campaign'|t('spin-to-win') }}</button>
+            </div>
+        </form>
+
+        {% if campaign.id %}
+            <form method="post" id="delete-form" style="display: none;">
+                {{ csrfInput() }}
+                {{ actionInput('spin-to-win/campaigns/delete') }}
+                {{ redirectInput('spin-to-win/campaigns') }}
+                <input type="hidden" name="id" value="{{ campaign.id }}">
+            </form>
+        {% endif %}
+    </div>
+
+    <!-- Live Builder & Simulator Logic -->
+    <script>
+        (function() {
+            // Keyboard shortcut: Ctrl+S or Cmd+S to save
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+                    e.preventDefault();
+                    const form = document.getElementById('campaign-form');
+                    if (form) {
+                        form.requestSubmit ? form.requestSubmit() : form.submit();
+                    }
+                }
+            });
+
+            // Tab Switching
+            const tabButtons = document.querySelectorAll('.stw-tab-btn');
+            const tabPanes = document.querySelectorAll('.stw-tab-pane');
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-tab');
+                    tabButtons.forEach(b => b.classList.remove('active'));
+                    tabPanes.forEach(p => p.classList.remove('active'));
+                    this.classList.add('active');
+                    const targetPane = document.getElementById(targetId);
+                    if (targetPane) {
+                        targetPane.classList.add('active');
+                    }
+                    if (targetId === 'tab-wheel' && typeof renderWheel === 'function') {
+                        renderWheel();
+                    }
+                });
+            });
+
+            // Quick Pool Setter
+            window.setQuickPool = function(size) {
+                const poolInput = document.getElementById('spinPoolSize');
+                if (poolInput) {
+                    poolInput.value = size;
+                    resetSimPool();
+                    renderWheel();
+                }
+            };
+
+            // Allocation Mode toggle description
+            window.onAllocationModeChange = function() {
+                const modeSelect = document.getElementById('allocationMode');
+                const descEl = document.getElementById('allocationModeDesc');
+                const pill = document.getElementById('preview-mode-pill');
+                if (!modeSelect) return;
+
+                if (modeSelect.value === 'probability_random') {
+                    if (descEl) descEl.textContent = 'Each spin independently rolls against the calculated probability (Prizes / Pool). Quotas are not strictly capped.';
+                    if (pill) {
+                        pill.textContent = 'Random Mode';
+                        pill.style.background = '#fef3c7';
+                        pill.style.color = '#92400e';
+                    }
+                } else {
+                    if (descEl) descEl.textContent = 'Exact prize counts are strictly awarded within each completed pool of spins. Won prizes are depleted until the pool finishes.';
+                    if (pill) {
+                        pill.textContent = 'Guaranteed Quota';
+                        pill.style.background = '#e0f2fe';
+                        pill.style.color = '#0369a1';
+                    }
+                }
+                resetSimPool();
+            };
+
+            // Color Palettes
+            window.colorPalettes = {
+                rainbow: ['#4f46e5', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#3b82f6'],
+                gold: ['#1e293b', '#d97706', '#0f172a', '#b45309', '#334155', '#f59e0b', '#475569', '#78350f'],
+                ocean: ['#0f766e', '#0284c7', '#0d9488', '#0369a1', '#14b8a6', '#0ea5e9', '#047857', '#0284c7'],
+                candy: ['#ec4899', '#a855f7', '#f43f5e', '#8b5cf6', '#fb7185', '#c084fc', '#f472b6', '#7c3aed']
+            };
+
+            window.applyPreset = function(presetName) {
+                const palette = window.colorPalettes[presetName] || window.colorPalettes.rainbow;
+                const cards = document.querySelectorAll('.stw-slice-card');
+                cards.forEach((card, idx) => {
+                    const colorInput = card.querySelector('.slice-bg-color');
+                    const textInput = card.querySelector('.slice-text-color');
+                    if (colorInput) {
+                        colorInput.value = palette[idx % palette.length];
+                    }
+                    if (textInput) {
+                        textInput.value = '#ffffff';
+                    }
+                });
+                renderWheel();
+            };
+
+            // Reward type toggle
+            window.onRewardTypeChange = function(select) {
+                const card = select.closest('.stw-slice-card');
+                const valWrap = card.querySelector('.discount-val-wrap');
+                if (valWrap) {
+                    if (select.value === 'no_prize' || select.value === 'free_shipping') {
+                        valWrap.style.opacity = '0.5';
+                    } else {
+                        valWrap.style.opacity = '1';
+                    }
+                }
+            };
+
+            // Toggle slice enabled / disabled
+            window.onSliceToggle = function(checkbox) {
+                const card = checkbox.closest('.stw-slice-card');
+                if (card) {
+                    if (!checkbox.checked) {
+                        card.style.opacity = '0.55';
+                        card.style.background = '#f8fafc';
+                    } else {
+                        card.style.opacity = '1';
+                        card.style.background = '#ffffff';
+                    }
+                }
+                resetSimPool();
+                renderWheel();
+            };
+
+            // Match spin pool size to currently allocated prizes
+            window.matchPoolToPrizes = function() {
+                const poolInput = document.getElementById('spinPoolSize');
+                const slices = getSlicesData();
+                let totalAllocated = 0;
+                slices.forEach(s => {
+                    if (s.enabled) totalAllocated += s.allocatedCount;
+                });
+                if (poolInput && totalAllocated > 0) {
+                    poolInput.value = totalAllocated;
+                    resetSimPool();
+                    renderWheel();
+                }
+            };
+
+            // Scale active prize quotas proportionally to fit inside current pool
+            window.scalePrizesToPool = function() {
+                const poolInput = document.getElementById('spinPoolSize');
+                const poolSize = Math.max(10, parseInt(poolInput ? poolInput.value : 1000, 10) || 1000);
+                const slices = getSlicesData();
+                const activeSlices = slices.filter(s => s.enabled);
+                if (activeSlices.length === 0) return;
+
+                let totalCurrent = 0;
+                activeSlices.forEach(s => totalCurrent += s.allocatedCount);
+                if (totalCurrent === 0) return;
+
+                let allocatedSum = 0;
+                activeSlices.forEach(s => {
+                    const input = s.cardElement.querySelector('.slice-allocated-input');
+                    const weightInput = s.cardElement.querySelector('.slice-weight-input');
+                    if (!input) return;
+
+                    let scaled = Math.round((s.allocatedCount / totalCurrent) * poolSize);
+                    if (s.allocatedCount > 0 && scaled === 0 && poolSize >= activeSlices.length) {
+                        scaled = 1;
+                    }
+                    input.value = scaled;
+                    if (weightInput) weightInput.value = scaled;
+                    allocatedSum += scaled;
+                });
+
+                const diff = poolSize - allocatedSum;
+                if (diff !== 0) {
+                    const target = activeSlices.find(s => s.rewardType === 'no_prize') || activeSlices[activeSlices.length - 1];
+                    if (target) {
+                        const input = target.cardElement.querySelector('.slice-allocated-input');
+                        const weightInput = target.cardElement.querySelector('.slice-weight-input');
+                        if (input) {
+                            const currentVal = parseInt(input.value, 10) || 0;
+                            input.value = Math.max(0, currentVal + diff);
+                            if (weightInput) weightInput.value = input.value;
+                        }
+                    }
+                }
+
+                resetSimPool();
+                renderWheel();
+            };
+
+            // Auto-balance Pool: assigns difference to a "no_prize" slice
+            window.autoBalancePool = function() {
+                const poolInput = document.getElementById('spinPoolSize');
+                const poolSize = Math.max(10, parseInt(poolInput ? poolInput.value : 1000, 10) || 1000);
+                const cards = document.querySelectorAll('.stw-slice-card');
+
+                let otherPrizesSum = 0;
+                let noPrizeCard = null;
+
+                cards.forEach(card => {
+                    const isEnabled = card.querySelector('.slice-enabled-toggle')?.checked ?? true;
+                    const rewardType = card.querySelector('.slice-reward-type')?.value;
+                    const allocatedInput = card.querySelector('.slice-allocated-input');
+                    const count = allocatedInput ? Math.max(0, parseInt(allocatedInput.value, 10) || 0) : 0;
+
+                    if (!isEnabled) return;
+
+                    if (rewardType === 'no_prize' && !noPrizeCard) {
+                        noPrizeCard = card;
+                    } else {
+                        otherPrizesSum += count;
+                    }
+                });
+
+                if (otherPrizesSum > poolSize) {
+                    if (confirm(`Active prizes (${otherPrizesSum.toLocaleString()}) already exceed the total spin pool (${poolSize.toLocaleString()}).\n\nWould you like to proportionally scale down all active prizes to fit into ${poolSize.toLocaleString()} spins?`)) {
+                        scalePrizesToPool();
+                        return;
+                    }
+                }
+
+                if (!noPrizeCard) {
+                    // Add new loss slice
+                    addNewSlice('Better Luck', 'no_prize', 0);
+                    const newCards = document.querySelectorAll('.stw-slice-card');
+                    noPrizeCard = newCards[newCards.length - 1];
+                }
+
+                const neededNoPrizes = Math.max(0, poolSize - otherPrizesSum);
+                if (noPrizeCard) {
+                    const allocatedInput = noPrizeCard.querySelector('.slice-allocated-input');
+                    const weightInput = noPrizeCard.querySelector('.slice-weight-input');
+                    if (allocatedInput) allocatedInput.value = neededNoPrizes;
+                    if (weightInput) weightInput.value = neededNoPrizes;
+                }
+
+                resetSimPool();
+                renderWheel();
+            };
+
+            // Audio Click Synthesizer for Test Spin
+            let audioCtx = null;
+            function playTickSound() {
+                try {
+                    if (!audioCtx) {
+                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    if (audioCtx.state === 'suspended') {
+                        audioCtx.resume();
+                    }
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.04);
+                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.04);
+                } catch(e) {}
+            }
+
+            // Extract Active Slices with Pool Allocations
+            function getSlicesData() {
+                const cards = document.querySelectorAll('.stw-slice-card');
+                const slices = [];
+                cards.forEach(card => {
+                    const labelInput = card.querySelector('.slice-label-input');
+                    const allocatedInput = card.querySelector('.slice-allocated-input');
+                    const colorInput = card.querySelector('.slice-bg-color');
+                    const textColorInput = card.querySelector('.slice-text-color');
+                    const rewardSelect = card.querySelector('.slice-reward-type');
+                    const discountInput = card.querySelector('.slice-discount-value');
+                    const enabledCheck = card.querySelector('.slice-enabled-toggle');
+
+                    const count = allocatedInput ? Math.max(0, parseInt(allocatedInput.value, 10) || 0) : 0;
+
+                    slices.push({
+                        label: labelInput ? labelInput.value.trim() : 'Prize',
+                        allocatedCount: count,
+                        weight: count > 0 ? count : 1,
+                        color: colorInput ? colorInput.value : '#4f46e5',
+                        textColor: textColorInput ? textColorInput.value : '#ffffff',
+                        rewardType: rewardSelect ? rewardSelect.value : 'no_prize',
+                        discountValue: discountInput ? parseFloat(discountInput.value) || 0 : 0,
+                        enabled: enabledCheck ? enabledCheck.checked : true,
+                        cardElement: card
+                    });
+                });
+                return slices;
+            }
+
+            // Client-side Simulation Pool state for Quota mode
+            let simPool = null;
+            window.resetSimPool = function() {
+                const poolInput = document.getElementById('spinPoolSize');
+                const poolSize = Math.max(10, parseInt(poolInput ? poolInput.value : 1000, 10) || 1000);
+                const slices = getSlicesData();
+
+                let totalAllocated = 0;
+                slices.forEach(s => {
+                    if (s.enabled) totalAllocated += s.allocatedCount;
+                });
+
+                // Capacity of the simulation pool
+                const totalSpins = poolSize;
+                // If slices don't allocate all spins in the pool, the rest are non-prize spins
+                const unallocatedSpins = Math.max(0, poolSize - totalAllocated);
+
+                simPool = {
+                    poolSize: poolSize,
+                    totalSpins: totalSpins,
+                    remainingTotalSpins: totalSpins,
+                    unallocatedSpins: unallocatedSpins,
+                    remainingUnallocated: unallocatedSpins,
+                    slices: slices.map(s => ({
+                        label: s.label,
+                        rewardType: s.rewardType,
+                        discountValue: s.discountValue,
+                        initialQuota: s.allocatedCount,
+                        remainingQuota: s.allocatedCount,
+                        enabled: s.enabled
+                    }))
+                };
+
+                updateSimTracker();
+                const banner = document.getElementById('simulation-result');
+                if (banner) banner.style.display = 'none';
+            };
+
+            function updateSimTracker() {
+                if (!simPool) return;
+                const remEl = document.getElementById('sim-remaining-spins');
+                const totEl = document.getElementById('sim-total-spins');
+                if (remEl) remEl.textContent = Math.max(0, simPool.remainingTotalSpins).toLocaleString();
+                if (totEl) totEl.textContent = simPool.totalSpins.toLocaleString();
+            }
+
+            // Dynamic SVG Wheel Renderer & Allocation Recalculator
+            let currentRotation = 0;
+            window.renderWheel = function() {
+                const poolInput = document.getElementById('spinPoolSize');
+                const poolSize = Math.max(10, parseInt(poolInput ? poolInput.value : 1000, 10) || 1000);
+
+                const slices = getSlicesData();
+                const totalSlices = slices.length;
+                if (totalSlices === 0) return;
+
+                const activeSlices = slices.filter(s => s.enabled);
+                const totalActive = activeSlices.length;
+
+                // Sum configured prizes only from active slices
+                let totalAllocated = 0;
+                slices.forEach(s => {
+                    if (s.enabled) totalAllocated += s.allocatedCount;
+                });
+
+                // Update summary bar indicators
+                const dispTotalAllocated = document.getElementById('disp-total-allocated');
+                const dispPoolSize = document.getElementById('disp-pool-size');
+                const dispAllocatedPct = document.getElementById('disp-allocated-pct');
+                const dispRemainingSpins = document.getElementById('disp-remaining-spins');
+                const poolStatusBadge = document.getElementById('pool-status-badge');
+
+                if (dispTotalAllocated) dispTotalAllocated.textContent = totalAllocated.toLocaleString();
+                if (dispPoolSize) dispPoolSize.textContent = poolSize.toLocaleString();
+
+                const allocatedPct = poolSize > 0 ? ((totalAllocated / poolSize) * 100).toFixed(1) : 0;
+                if (dispAllocatedPct) dispAllocatedPct.textContent = allocatedPct + '%';
+
+                const diff = poolSize - totalAllocated;
+                if (dispRemainingSpins) {
+                    if (diff === 0) {
+                        dispRemainingSpins.textContent = '0 spins (Exact)';
+                        dispRemainingSpins.style.color = '#10b981';
+                    } else if (diff > 0) {
+                        dispRemainingSpins.textContent = diff.toLocaleString() + ' spins unallocated';
+                        dispRemainingSpins.style.color = '#f59e0b';
+                    } else {
+                        dispRemainingSpins.textContent = Math.abs(diff).toLocaleString() + ' spins over allocated!';
+                        dispRemainingSpins.style.color = '#ef4444';
+                    }
+                }
+
+                if (poolStatusBadge) {
+                    if (diff === 0) {
+                        poolStatusBadge.innerHTML = '✔ Pool Perfectly Balanced (100%)';
+                        poolStatusBadge.style.background = '#dcfce7';
+                        poolStatusBadge.style.color = '#166534';
+                    } else if (diff > 0) {
+                        poolStatusBadge.innerHTML = `⚠ Under-allocated by ${diff.toLocaleString()} spins (${((diff / poolSize) * 100).toFixed(1)}% unallocated)`;
+                        poolStatusBadge.style.background = '#fef3c7';
+                        poolStatusBadge.style.color = '#92400e';
+                    } else {
+                        poolStatusBadge.innerHTML = `✖ Over-allocated by ${Math.abs(diff).toLocaleString()} spins (${((Math.abs(diff) / poolSize) * 100).toFixed(1)}% above pool)`;
+                        poolStatusBadge.style.background = '#fee2e2';
+                        poolStatusBadge.style.color = '#991b1b';
+                    }
+                }
+
+                // Show or hide over-allocation helper action buttons
+                const overAllocActions = document.getElementById('overallocation-actions');
+                const btnMatchPool = document.getElementById('btn-match-pool');
+                if (diff < 0) {
+                    if (overAllocActions) overAllocActions.style.display = 'inline-flex';
+                    if (btnMatchPool) btnMatchPool.textContent = `Match Pool to Prizes (${totalAllocated.toLocaleString()})`;
+                } else {
+                    if (overAllocActions) overAllocActions.style.display = 'none';
+                }
+
+                const sliceCountBadge = document.getElementById('slice-count-badge');
+                if (sliceCountBadge) {
+                    sliceCountBadge.textContent = totalActive === totalSlices ? `${totalSlices}` : `${totalActive} active (${totalSlices} total)`;
+                }
+
+                // Recalculate Win Probability (%) for each slice card
+                // Formula: Win Probability (%) = (Number of Prizes / Probability Spin Pool) × 100
+                slices.forEach(s => {
+                    const probBadge = s.cardElement.querySelector('.slice-prob-badge');
+                    const weightHidden = s.cardElement.querySelector('.slice-weight-input');
+                    const allocatedInput = s.cardElement.querySelector('.slice-allocated-input');
+                    const isOverLimit = s.enabled && poolSize > 0 && s.allocatedCount > poolSize;
+
+                    if (weightHidden) {
+                        weightHidden.value = s.allocatedCount;
+                    }
+
+                    if (!s.enabled) {
+                        s.cardElement.style.opacity = '0.55';
+                        s.cardElement.style.background = '#f8fafc';
+                        if (allocatedInput) allocatedInput.style.borderColor = '';
+                        if (probBadge) {
+                            probBadge.textContent = 'Inactive (Excluded)';
+                            probBadge.style.color = '#64748b';
+                            probBadge.style.background = '#f1f5f9';
+                        }
+                    } else {
+                        s.cardElement.style.opacity = '1';
+                        s.cardElement.style.background = '#ffffff';
+
+                        if (isOverLimit) {
+                            if (allocatedInput) allocatedInput.style.borderColor = '#ef4444';
+                        } else {
+                            if (allocatedInput) allocatedInput.style.borderColor = '';
+                        }
+
+                        if (probBadge) {
+                            const prob = poolSize > 0 ? ((s.allocatedCount / poolSize) * 100) : 0;
+                            const formatted = prob % 1 === 0 ? prob.toFixed(0) : prob.toFixed(prob < 1 ? 2 : 1);
+                            if (isOverLimit) {
+                                probBadge.textContent = `⚠ ${formatted}% win probability (${s.allocatedCount} / ${poolSize}) - Over Pool!`;
+                                probBadge.style.color = '#b91c1c';
+                                probBadge.style.background = '#fee2e2';
+                            } else {
+                                probBadge.textContent = `${formatted}% win probability (${s.allocatedCount} / ${poolSize})`;
+                                probBadge.style.color = '#4338ca';
+                                probBadge.style.background = '#e0e7ff';
+                            }
+                        }
+                    }
+                });
+
+                // Wheel Styling properties
+                const hubText = document.getElementById('hubText') ? document.getElementById('hubText').value : 'SPIN';
+                const hubColor = document.getElementById('hubColor') ? document.getElementById('hubColor').value : '#ffffff';
+                const hubTextColor = document.getElementById('hubTextColor') ? document.getElementById('hubTextColor').value : '#0f172a';
+                const rimColor = document.getElementById('rimColor') ? document.getElementById('rimColor').value : '#1e293b';
+                const pointerColor = document.getElementById('pointerColor') ? document.getElementById('pointerColor').value : '#ef4444';
+
+                // Update pointer SVG color
+                const pointerPath = document.getElementById('pointer-svg-path');
+                if (pointerPath) pointerPath.setAttribute('fill', pointerColor);
+
+                const svg = document.getElementById('svg-wheel');
+                if (!svg) return;
+
+                const cx = 200;
+                const cy = 200;
+                const outerRadius = 194;
+                const sliceRadius = 176;
+                const hubRadius = 46;
+
+                let svgContent = '';
+
+                // Handle case where NO active slices exist
+                if (totalActive === 0) {
+                    svgContent += `<circle cx="${cx}" cy="${cy}" r="${outerRadius}" fill="${rimColor}" stroke="#ffffff" stroke-width="3"/>`;
+                    svgContent += `<circle cx="${cx}" cy="${cy}" r="${sliceRadius}" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6 4"/>`;
+                    svgContent += `<text x="${cx}" y="${cy - 8}" text-anchor="middle" fill="#64748b" font-size="13" font-weight="700" font-family="system-ui, -apple-system, sans-serif">No Active Slices</text>`;
+                    svgContent += `<text x="${cx}" y="${cy + 14}" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="system-ui, -apple-system, sans-serif">Check "Active" on a slice to preview</text>`;
+                    svg.innerHTML = svgContent;
+                    return;
+                }
+
+                const sliceAngle = 360 / totalActive;
+
+                // 1. Outer decorative rim
+                svgContent += `<circle cx="${cx}" cy="${cy}" r="${outerRadius}" fill="${rimColor}" stroke="#ffffff" stroke-width="3"/>`;
+
+                // 2. Decorative LED rim dots
+                const dotCount = Math.max(16, totalActive * 3);
+                for (let d = 0; d < dotCount; d++) {
+                    const dotAngle = (d * (360 / dotCount)) * (Math.PI / 180);
+                    const dotX = cx + (outerRadius - 9) * Math.cos(dotAngle);
+                    const dotY = cy + (outerRadius - 9) * Math.sin(dotAngle);
+                    svgContent += `<circle cx="${dotX.toFixed(2)}" cy="${dotY.toFixed(2)}" r="3" fill="#ffffff" opacity="0.9"/>`;
+                }
+
+                // 3. Active Slices Only (Inactive slices are excluded from preview)
+                for (let i = 0; i < totalActive; i++) {
+                    const slice = activeSlices[i];
+                    const startDeg = i * sliceAngle;
+                    const endDeg = (i + 1) * sliceAngle;
+                    const startRad = (startDeg - 90) * (Math.PI / 180);
+                    const endRad = (endDeg - 90) * (Math.PI / 180);
+
+                    const x1 = cx + sliceRadius * Math.cos(startRad);
+                    const y1 = cy + sliceRadius * Math.sin(startRad);
+                    const x2 = cx + sliceRadius * Math.cos(endRad);
+                    const y2 = cy + sliceRadius * Math.sin(endRad);
+
+                    const largeArc = sliceAngle > 180 ? 1 : 0;
+                    const pathD = `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${sliceRadius} ${sliceRadius} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
+
+                    // Slice arc path
+                    svgContent += `<path d="${pathD}" fill="${slice.color}" stroke="#ffffff" stroke-width="1.5"/>`;
+
+                    // Slice Text placed radially
+                    const midDeg = startDeg + (sliceAngle / 2) - 90;
+                    const textDist = sliceRadius * 0.62;
+                    const tx = cx + textDist * Math.cos(midDeg * Math.PI / 180);
+                    const ty = cy + textDist * Math.sin(midDeg * Math.PI / 180);
+                    const textRot = midDeg + 90;
+
+                    let label = slice.label;
+                    if (label.length > 14) label = label.substring(0, 12) + '…';
+
+                    svgContent += `<g transform="translate(${tx.toFixed(2)}, ${ty.toFixed(2)}) rotate(${textRot.toFixed(2)})">
+                        <text x="0" y="4" text-anchor="middle" fill="${slice.textColor}" font-size="12" font-weight="700" font-family="system-ui, -apple-system, sans-serif" style="user-select: none;">
+                            ${escapeXml(label)}
+                        </text>
+                    </g>`;
+                }
+
+                // 4. Center Hub
+                svgContent += `
+                    <circle cx="${cx}" cy="${cy}" r="${hubRadius + 6}" fill="rgba(0,0,0,0.15)"/>
+                    <circle cx="${cx}" cy="${cy}" r="${hubRadius + 2}" fill="${rimColor}"/>
+                    <circle cx="${cx}" cy="${cy}" r="${hubRadius}" fill="${hubColor}" stroke="#ffffff" stroke-width="2"/>
+                    <text x="${cx}" y="${cy + 5}" text-anchor="middle" fill="${hubTextColor}" font-size="14" font-weight="800" font-family="system-ui, -apple-system, sans-serif" letter-spacing="1" style="user-select: none;">
+                        ${escapeXml(hubText)}
+                    </text>
+                `;
+
+                svg.innerHTML = svgContent;
+
+                if (!simPool || simPool.poolSize !== poolSize) {
+                    resetSimPool();
+                } else {
+                    updateSimTracker();
+                }
+            };
+
+            function escapeXml(unsafe) {
+                return unsafe.replace(/[<>&'"]/g, function (c) {
+                    switch (c) {
+                        case '<': return '&lt;';
+                        case '>': return '&gt;';
+                        case '&': return '&amp;';
+                        case '\'': return '&apos;';
+                        case '"': return '&quot;';
+                    }
+                });
+            }
+
+            // Test Spin Physics Simulator with Guaranteed Quota vs Random Probability
+            let isSpinning = false;
+            window.executeTestSpin = function() {
+                if (isSpinning) return;
+
+                const poolInput = document.getElementById('spinPoolSize');
+                const poolSize = Math.max(10, parseInt(poolInput ? poolInput.value : 1000, 10) || 1000);
+                const modeSelect = document.getElementById('allocationMode');
+                const isQuotaMode = !modeSelect || modeSelect.value === 'quota_guaranteed';
+
+                const slices = getSlicesData();
+                const enabledSlices = slices.filter(s => s.enabled);
+                if (enabledSlices.length === 0) {
+                    alert('Please enable at least one slice to spin!');
+                    return;
+                }
+
+                if (!simPool || simPool.poolSize !== poolSize) {
+                    resetSimPool();
+                }
+
+                let winner = null;
+                let winnerSimIndex = -1;
+                let quotaRemainingAfter = 0;
+
+                if (isQuotaMode) {
+                    // Check if entire simulation pool cycle is exhausted
+                    if (simPool.remainingTotalSpins <= 0) {
+                        resetSimPool();
+                        alert('All spins in the simulation pool were completed! A new pool cycle was started.');
+                    }
+
+                    const availableSim = simPool.slices.filter(s => s.enabled && s.remainingQuota > 0);
+                    const unallocated = Math.max(0, simPool.remainingUnallocated);
+                    let sumAvailableQuotas = 0;
+                    availableSim.forEach(s => sumAvailableQuotas += s.remainingQuota);
+                    const totalDrawPool = sumAvailableQuotas + unallocated;
+
+                    if (totalDrawPool <= 0) {
+                        resetSimPool();
+                        alert('All prizes in the simulation pool were exhausted! A new pool cycle was started.');
+                    }
+
+                    const rand = Math.random() * (totalDrawPool || 1);
+
+                    if (rand < sumAvailableQuotas && availableSim.length > 0) {
+                        // Won one of the configured slice prizes
+                        let running = 0;
+                        let chosenSim = availableSim[0];
+                        for (let i = 0; i < availableSim.length; i++) {
+                            running += availableSim[i].remainingQuota;
+                            if (rand <= running) {
+                                chosenSim = availableSim[i];
+                                break;
+                            }
+                        }
+                        chosenSim.remainingQuota = Math.max(0, chosenSim.remainingQuota - 1);
+                        quotaRemainingAfter = chosenSim.remainingQuota;
+                        winnerSimIndex = simPool.slices.indexOf(chosenSim);
+                        winner = slices[winnerSimIndex];
+                    } else {
+                        // Drawn from unallocated loss pool -> lands on no_prize slice
+                        simPool.remainingUnallocated = Math.max(0, simPool.remainingUnallocated - 1);
+                        const noPrizeSlices = slices.filter(s => s.enabled && s.rewardType === 'no_prize');
+                        if (noPrizeSlices.length > 0) {
+                            winner = noPrizeSlices[Math.floor(Math.random() * noPrizeSlices.length)];
+                        } else {
+                            winner = enabledSlices[enabledSlices.length - 1];
+                        }
+                        winnerSimIndex = slices.indexOf(winner);
+                        const matchSim = simPool.slices[winnerSimIndex];
+                        if (matchSim) {
+                            matchSim.remainingQuota = Math.max(0, matchSim.remainingQuota - 1);
+                            quotaRemainingAfter = matchSim.remainingQuota;
+                        }
+                    }
+
+                    // Decrement total simulation pool spins
+                    simPool.remainingTotalSpins = Math.max(0, simPool.remainingTotalSpins - 1);
+                    updateSimTracker();
+                } else {
+                    // Random Probability Mode: independent roll
+                    let totalWeight = 0;
+                    enabledSlices.forEach(s => totalWeight += Math.max(1, s.allocatedCount));
+                    const randWeight = Math.random() * totalWeight;
+                    let running = 0;
+                    winner = enabledSlices[0];
+
+                    for (let i = 0; i < enabledSlices.length; i++) {
+                        running += Math.max(1, enabledSlices[i].allocatedCount);
+                        if (randWeight <= running) {
+                            winner = enabledSlices[i];
+                            break;
+                        }
+                    }
+                    winnerSimIndex = slices.indexOf(winner);
+
+                    simPool.remainingTotalSpins = Math.max(0, simPool.remainingTotalSpins - 1);
+                    updateSimTracker();
+                }
+
+                isSpinning = true;
+                const spinBtn = document.getElementById('btn-test-spin');
+                const pointer = document.getElementById('wheel-pointer');
+                const resultBanner = document.getElementById('simulation-result');
+                if (spinBtn) spinBtn.disabled = true;
+                if (resultBanner) resultBanner.style.display = 'none';
+
+                const activeSlices = slices.filter(s => s.enabled);
+                const activeWinnerIndex = activeSlices.indexOf(winner);
+                const totalActive = activeSlices.length;
+                const sliceAngle = 360 / (totalActive || 1);
+
+                // Center of winning slice landing at 12 o'clock
+                const sliceCenterAngle = ((activeWinnerIndex >= 0 ? activeWinnerIndex : 0) + 0.5) * sliceAngle;
+                const targetLandingAngle = (360 - sliceCenterAngle);
+
+                // Add random jitter within slice
+                const jitter = (Math.random() - 0.5) * (sliceAngle * 0.7);
+
+                // Multi-rotations (6 to 8 full spins)
+                const fullSpins = (6 + Math.floor(Math.random() * 3)) * 360;
+                const finalRotation = currentRotation + fullSpins + (targetLandingAngle - (currentRotation % 360)) + jitter;
+
+                const svgWheel = document.getElementById('svg-wheel');
+                const spinDurationMs = 4500;
+
+                svgWheel.style.transition = `transform ${spinDurationMs}ms cubic-bezier(0.12, 0.85, 0.2, 1)`;
+                svgWheel.style.transform = `rotate(${finalRotation}deg)`;
+
+                // Ticker Audio and Visual Vibration
+                const startTickTime = Date.now();
+                function triggerTick() {
+                    const elapsed = Date.now() - startTickTime;
+                    const progress = elapsed / spinDurationMs;
+                    if (progress >= 1) return;
+
+                    playTickSound();
+                    if (pointer) {
+                        pointer.classList.add('ticking');
+                        setTimeout(() => pointer.classList.remove('ticking'), 60);
+                    }
+
+                    const nextDelay = 50 + Math.pow(progress, 3) * 350;
+                    if (progress < 0.98) {
+                        setTimeout(triggerTick, nextDelay);
+                    }
+                }
+                setTimeout(triggerTick, 100);
+
+                // When Spin Finishes
+                setTimeout(() => {
+                    currentRotation = finalRotation;
+                    isSpinning = false;
+                    if (spinBtn) spinBtn.disabled = false;
+
+                    const winTitle = document.getElementById('sim-winner-title');
+                    const winDesc = document.getElementById('sim-winner-desc');
+                    const winOdds = document.getElementById('sim-winner-odds');
+                    const winQuota = document.getElementById('sim-winner-quota-info');
+
+                    if (winTitle) winTitle.textContent = `🎉 Simulated Winner: "${winner.label}"!`;
+                    if (winDesc) {
+                        let rewardDesc = 'Better luck next time!';
+                        if (winner.rewardType === 'percent_discount') rewardDesc = `${winner.discountValue}% Off Coupon`;
+                        else if (winner.rewardType === 'fixed_discount') rewardDesc = `$${winner.discountValue.toFixed(2)} Off Coupon`;
+                        else if (winner.rewardType === 'free_shipping') rewardDesc = 'Free Shipping Coupon';
+                        else if (winner.rewardType === 'custom') rewardDesc = 'Free Product / Custom Prize';
+                        winDesc.innerHTML = `<strong>Reward:</strong> ${rewardDesc}`;
+                    }
+
+                    const prob = poolSize > 0 ? ((winner.allocatedCount / poolSize) * 100) : 0;
+                    const formattedProb = prob % 1 === 0 ? prob.toFixed(0) : prob.toFixed(prob < 1 ? 2 : 1);
+
+                    if (winOdds) {
+                        winOdds.innerHTML = `<strong>Win Probability:</strong> ${formattedProb}% (${winner.allocatedCount.toLocaleString()} prizes per ${poolSize.toLocaleString()} spins)`;
+                    }
+
+                    if (winQuota) {
+                        if (isQuotaMode) {
+                            winQuota.innerHTML = `<span style="color: #047857; font-weight: 600;">✔ Guaranteed Quota Mode:</span> Remaining quota in this test pool: <strong>${quotaRemainingAfter.toLocaleString()} / ${winner.allocatedCount.toLocaleString()}</strong>`;
+                        } else {
+                            winQuota.innerHTML = `<span style="color: #92400e; font-weight: 600;">🎲 Probability Random Mode:</span> True independent probability roll on every attempt.`;
+                        }
+                    }
+
+                    if (resultBanner) resultBanner.style.display = 'block';
+                }, spinDurationMs + 100);
+            };
+
+            window.resetWheelPosition = function() {
+                if (isSpinning) return;
+                const svgWheel = document.getElementById('svg-wheel');
+                const resultBanner = document.getElementById('simulation-result');
+                svgWheel.style.transition = 'transform 0.6s ease-out';
+                svgWheel.style.transform = 'rotate(0deg)';
+                currentRotation = 0;
+                if (resultBanner) resultBanner.style.display = 'none';
+            };
+
+            // Slice Management (Add, Delete, Move)
+            window.addNewSlice = function(defaultLabel, defaultReward, defaultVal) {
+                const container = document.getElementById('slices-container');
+                const cards = container.querySelectorAll('.stw-slice-card');
+                const newIdx = cards.length;
+                const palette = window.colorPalettes.rainbow;
+                const color = palette[newIdx % palette.length];
+                const poolInput = document.getElementById('spinPoolSize');
+                const poolSize = Math.max(10, parseInt(poolInput ? poolInput.value : 1000, 10) || 1000);
+
+                const label = defaultLabel || '10% discount';
+                const reward = defaultReward || 'percent_discount';
+                const val = defaultVal !== undefined ? defaultVal : 10;
+                const allocated = reward === 'no_prize' ? 200 : 50;
+
+                const cardHtml = `
+                    <div class="stw-slice-card" data-index="${newIdx}">
+                        <input type="hidden" name="segments[${newIdx}][sortOrder]" class="slice-sort-order" value="${newIdx}">
+                        <input type="hidden" name="segments[${newIdx}][awardedCount]" value="0">
+                        <input type="hidden" name="segments[${newIdx}][poolAwardedCount]" value="0">
+
+                        <div class="stw-slice-header">
+                            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                <span class="stw-slice-badge">${newIdx + 1}</span>
+                                <input type="text" name="segments[${newIdx}][label]" class="stw-input slice-label-input" value="${label}" placeholder="Slice Label" style="font-weight: 600; width: 220px;" required>
+                                <span class="slice-prob-badge stw-badge-pill" style="background: #e0e7ff; color: #4338ca; font-size: 11px;">--% win probability</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <button type="button" class="stw-preset-btn" title="Move Up" onclick="moveSlice(${newIdx}, -1)">▲</button>
+                                    <button type="button" class="stw-preset-btn" title="Move Down" onclick="moveSlice(${newIdx}, 1)">▼</button>
+                                </div>
+                                <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #475569; margin: 0; cursor: pointer;">
+                                    <input type="hidden" name="segments[${newIdx}][isEnabled]" value="0">
+                                    <input type="checkbox" name="segments[${newIdx}][isEnabled]" value="1" class="slice-enabled-toggle" onchange="onSliceToggle(this)" checked>
+                                    Active
+                                </label>
+                                <button type="button" class="stw-preset-btn" style="color: #ef4444; border-color: #fecaca; background: #fef2f2;" title="Delete slice" onclick="deleteSlice(${newIdx})">✕</button>
+                            </div>
+                        </div>
+                        <div class="stw-slice-grid">
+                            <div>
+                                <label class="stw-field-label">Prize Type</label>
+                                <select name="segments[${newIdx}][rewardType]" class="stw-input slice-reward-type" onchange="onRewardTypeChange(this)">
+                                    <option value="percent_discount" ${reward === 'percent_discount' ? 'selected' : ''}>Percent Discount (%)</option>
+                                    <option value="fixed_discount" ${reward === 'fixed_discount' ? 'selected' : ''}>Fixed Amount ($)</option>
+                                    <option value="free_shipping" ${reward === 'free_shipping' ? 'selected' : ''}>Free Shipping</option>
+                                    <option value="no_prize" ${reward === 'no_prize' ? 'selected' : ''}>No Prize / Loss</option>
+                                    <option value="custom" ${reward === 'custom' ? 'selected' : ''}>Free Product / Custom</option>
+                                </select>
+                            </div>
+                            <div class="discount-val-wrap" ${reward === 'no_prize' || reward === 'free_shipping' ? 'style="opacity: 0.5;"' : ''}>
+                                <label class="stw-field-label">Discount Value</label>
+                                <input type="number" step="0.01" min="0" name="segments[${newIdx}][discountValue]" class="stw-input slice-discount-value" value="${val}">
+                            </div>
+                            <div>
+                                <label class="stw-field-label">Prizes in Pool</label>
+                                <input type="number" min="0" max="1000000" name="segments[${newIdx}][allocatedCount]" class="stw-input slice-allocated-input" value="${allocated}" style="font-weight: 700; color: #4338ca;">
+                                <input type="hidden" name="segments[${newIdx}][probabilityWeight]" class="slice-weight-input" value="${allocated}">
+                            </div>
+                            <div>
+                                <label class="stw-field-label">Colors (Slice & Text)</label>
+                                <div class="stw-color-swatch-wrap">
+                                    <input type="color" name="segments[${newIdx}][color]" class="stw-color-input slice-bg-color" value="${color}" title="Slice background color">
+                                    <input type="color" name="segments[${newIdx}][textColor]" class="stw-color-input slice-text-color" value="#ffffff" title="Slice text color">
+                                    <input type="number" min="0" max="365" name="segments[${newIdx}][couponDurationDays]" class="stw-input" value="7" placeholder="Days" style="width: 65px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                container.insertAdjacentHTML('beforeend', cardHtml);
+                reindexSlices();
+                attachInputListeners();
+                resetSimPool();
+                renderWheel();
+            };
+
+            window.deleteSlice = function(idx) {
+                const cards = document.querySelectorAll('.stw-slice-card');
+                if (cards.length <= 2) {
+                    alert('A prize wheel must have at least 2 slices!');
+                    return;
+                }
+                const card = document.querySelector(`.stw-slice-card[data-index="${idx}"]`);
+                if (card) {
+                    card.remove();
+                    reindexSlices();
+                    resetSimPool();
+                    renderWheel();
+                }
+            };
+
+            window.moveSlice = function(idx, direction) {
+                const container = document.getElementById('slices-container');
+                const card = document.querySelector(`.stw-slice-card[data-index="${idx}"]`);
+                if (!card) return;
+
+                if (direction === -1 && card.previousElementSibling) {
+                    container.insertBefore(card, card.previousElementSibling);
+                } else if (direction === 1 && card.nextElementSibling) {
+                    container.insertBefore(card.nextElementSibling, card);
+                }
+
+                reindexSlices();
+                renderWheel();
+            };
+
+            function reindexSlices() {
+                const cards = document.querySelectorAll('.stw-slice-card');
+                cards.forEach((card, idx) => {
+                    card.setAttribute('data-index', idx);
+                    const badge = card.querySelector('.stw-slice-badge');
+                    if (badge) badge.textContent = idx + 1;
+
+                    card.querySelectorAll('input, select').forEach(field => {
+                        const name = field.getAttribute('name');
+                        if (name) {
+                            field.setAttribute('name', name.replace(/segments\[\d+\]/, `segments[${idx}]`));
+                        }
+                    });
+
+                    const upBtn = card.querySelector('button[title="Move Up"]');
+                    if (upBtn) upBtn.setAttribute('onclick', `moveSlice(${idx}, -1)`);
+
+                    const downBtn = card.querySelector('button[title="Move Down"]');
+                    if (downBtn) downBtn.setAttribute('onclick', `moveSlice(${idx}, 1)`);
+
+                    const delBtn = card.querySelector('button[title="Delete slice"]');
+                    if (delBtn) delBtn.setAttribute('onclick', `deleteSlice(${idx})`);
+                });
+            }
+
+            function attachInputListeners() {
+                const onWheelAndSimUpdate = function() {
+                    resetSimPool();
+                    renderWheel();
+                };
+
+                const poolInput = document.getElementById('spinPoolSize');
+                if (poolInput) {
+                    poolInput.removeEventListener('input', onWheelAndSimUpdate);
+                    poolInput.addEventListener('input', onWheelAndSimUpdate);
+                    poolInput.removeEventListener('change', onWheelAndSimUpdate);
+                    poolInput.addEventListener('change', onWheelAndSimUpdate);
+                }
+
+                const container = document.getElementById('slices-container');
+                container.querySelectorAll('input, select').forEach(el => {
+                    el.removeEventListener('input', onWheelAndSimUpdate);
+                    el.addEventListener('input', onWheelAndSimUpdate);
+                    el.removeEventListener('change', onWheelAndSimUpdate);
+                    el.addEventListener('change', onWheelAndSimUpdate);
+                });
+
+                ['hubText', 'hubColor', 'hubTextColor', 'rimColor', 'pointerColor'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.removeEventListener('input', renderWheel);
+                        el.addEventListener('input', renderWheel);
+                        el.removeEventListener('change', renderWheel);
+                        el.addEventListener('change', renderWheel);
+                    }
+                });
+
+                ['panelBgColor', 'headlineColor', 'subtextColor', 'inputBgColor', 'inputBorderColor', 'inputTextColor', 'buttonBgColor', 'buttonTextColor'].forEach(id => {
+                    const el = document.getElementById(id);
+                    const lbl = document.getElementById('lbl-' + id);
+                    if (el && lbl) {
+                        const updateLbl = () => { lbl.textContent = el.value; };
+                        el.removeEventListener('input', updateLbl);
+                        el.addEventListener('input', updateLbl);
+                        el.removeEventListener('change', updateLbl);
+                        el.addEventListener('change', updateLbl);
+                    }
+                });
+                // Toggle sidebar position field based on displayMode
+                const displayModeSelect = document.getElementById('displayMode');
+                const sidebarPosField = document.getElementById('sidebar-position-field');
+                if (displayModeSelect && sidebarPosField) {
+                    displayModeSelect.addEventListener('change', function() {
+                        sidebarPosField.style.display = this.value === 'sidebar' ? 'block' : 'none';
+                    });
+                }
+            }
+
+            // Initial Setup
+            attachInputListeners();
+            renderWheel();
+        })();
+    </script>
+{% endblock %}

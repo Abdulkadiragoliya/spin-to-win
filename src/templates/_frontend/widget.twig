@@ -1,0 +1,1471 @@
+{# Spin to Win Storefront Widget #}
+{% set displayMode = options.displayMode ?? campaign.displayMode|default('popup') %}
+{% set sidebarPosition = options.sidebarPosition ?? wheelSettings.sidebarPosition|default('left') %}
+{% set triggerType = options.triggerType ?? campaign.triggerType|default('load') %}
+{% set triggerDelay = options.triggerDelay ?? campaign.triggerDelay|default(0) %}
+{% set scrollThreshold = options.scrollThreshold ?? campaign.scrollThreshold|default(0) %}
+{% set widgetId = 'stw-' ~ campaign.handle ~ '-' ~ random() %}
+{% set csrfTokenName = craft.app.config.general.csrfTokenName|default('CRAFT_CSRF_TOKEN') %}
+{% set csrfTokenValue = craft.app.request.csrfToken|default('') %}
+
+{% set completedCookie = craft.app.request.cookies.get('stw_completed_' ~ campaign.handle) %}
+{% set forceTest = craft.app.request.getQueryParam('test_spin') or craft.app.request.getQueryParam('spin') == 'force' or craft.app.request.getQueryParam('spin') == '1' %}
+{% if not completedCookie or forceTest %}
+
+<div id="{{ widgetId }}" class="stw-widget-root stw-mode-{{ displayMode }} stw-sidebar-{{ sidebarPosition }}" data-handle="{{ campaign.handle }}" data-mode="{{ displayMode }}" data-sidebar-pos="{{ sidebarPosition }}" data-trigger="{{ triggerType }}" data-delay="{{ triggerDelay }}" data-scroll="{{ scrollThreshold }}">
+    <style>
+        /* Scoped Spin to Win Widget Styles */
+        #{{ widgetId }} {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: {{ wheelSettings.headlineColor|default('#0f172a') }};
+            box-sizing: border-box;
+            z-index: 999999;
+            pointer-events: none;
+            --stw-panel-bg: {{ wheelSettings.panelBgColor|default('#ffffff') }};
+            --stw-headline-color: {{ wheelSettings.headlineColor|default('#0f172a') }};
+            --stw-subtext-color: {{ wheelSettings.subtextColor|default('#64748b') }};
+            --stw-input-bg: {{ wheelSettings.inputBgColor|default('#ffffff') }};
+            --stw-input-border: {{ wheelSettings.inputBorderColor|default('#cbd5e1') }};
+            --stw-input-text: {{ wheelSettings.inputTextColor|default('#0f172a') }};
+            --stw-btn-bg: {{ wheelSettings.buttonBgColor|default('#4f46e5') }};
+            --stw-btn-text: {{ wheelSettings.buttonTextColor|default('#ffffff') }};
+        }
+        #{{ widgetId }} * {
+            box-sizing: border-box;
+        }
+        /* Backdrop for Modal Popup */
+        #{{ widgetId }} .stw-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 999998;
+        }
+        #{{ widgetId }}.stw-active .stw-backdrop {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        /* Modal Popup Card */
+        #{{ widgetId }} .stw-modal-card {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -46%) scale(0.95);
+            background: var(--stw-panel-bg, #ffffff);
+            border-radius: 24px;
+            box-shadow: 0 25px 65px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.06);
+            width: 95%;
+            max-width: 980px; /* Big desktop modal */
+            min-height: 520px;
+            max-height: 94vh;
+            overflow: hidden;
+            z-index: 999999;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        #{{ widgetId }}.stw-active .stw-modal-card {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Slide-in Sidebar Panel: Horizontal Half-Wheel Desktop Drawer */
+        #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-panel {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            transform: translate(-105%, -50%);
+            background: var(--stw-panel-bg, #ffffff);
+            border-radius: 0 24px 24px 0;
+            box-shadow: 0 25px 65px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.06);
+            z-index: 999999;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            max-width: calc(100vw - 20px);
+        }
+        #{{ widgetId }}.stw-active.stw-mode-sidebar .stw-sidebar-panel {
+            transform: translate(0, -50%);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Right Side Desktop Sidebar */
+        #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-panel {
+            left: auto;
+            right: 0;
+            transform: translate(105%, -50%);
+            border-radius: 24px 0 0 24px;
+        }
+        #{{ widgetId }}.stw-active.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-panel {
+            transform: translate(0, -50%);
+        }
+        #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-grid {
+            flex-direction: row-reverse;
+        }
+        #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-wheel-wrap .stw-wheel-side {
+            left: auto;
+            right: -130px;
+        }
+        #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-wheel-wrap .stw-pointer-horizontal {
+            left: auto;
+            right: 308px;
+            transform: translateY(-50%) rotate(180deg);
+        }
+        #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-wheel-wrap .stw-pointer-horizontal.ticking {
+            transform: translateY(-50%) rotate(180deg) scale(1.15) rotate(8deg);
+        }
+        #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-close-btn {
+            right: auto;
+            left: 16px;
+        }
+
+        /* Top Slide-down Sidebar for Desktop (min-width: 769px): Big 440px Wheel & Centered Layout */
+        @media (min-width: 769px) {
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-panel {
+                top: 0 !important;
+                left: 50% !important;
+                right: auto !important;
+                transform: translate(-50%, -110%) !important;
+                border-radius: 0 0 24px 24px !important;
+                width: 92% !important;
+                max-width: 540px !important;
+                max-height: calc(100vh - 28px) !important;
+                overflow-y: auto !important;
+                box-shadow: 0 25px 65px -12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.08) !important;
+            }
+            #{{ widgetId }}.stw-active.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-panel {
+                transform: translate(-50%, 0) !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-grid {
+                flex-direction: column !important;
+                align-items: center !important;
+                padding: 24px 24px 30px 24px !important;
+                min-height: auto !important;
+                width: 100% !important;
+                text-align: center !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-wheel-wrap {
+                width: 450px !important;
+                height: 450px !important;
+                justify-content: center !important;
+                margin: 0 auto !important;
+                position: relative !important;
+                overflow: visible !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-wheel-wrap .stw-wheel-side {
+                position: relative !important;
+                left: auto !important;
+                right: auto !important;
+                top: auto !important;
+                transform: none !important;
+                width: 440px !important;
+                height: 440px !important;
+                margin: 10px auto 0 auto !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-wheel-wrap .stw-svg {
+                width: 440px !important;
+                height: 440px !important;
+            }
+            /* Top Slide-down Pin: Native vertical pointer at 12 o'clock center starting from top of circle */
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-wheel-wrap .stw-pointer-horizontal {
+                display: none !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-wheel-wrap .stw-pointer-vertical {
+                display: block !important;
+                position: absolute !important;
+                top: -6px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                transform-origin: 16px 8px !important;
+                width: 32px !important;
+                height: 42px !important;
+                z-index: 35 !important;
+                filter: drop-shadow(0 3px 5px rgba(0,0,0,0.35)) !important;
+                transition: transform 0.1s ease !important;
+                pointer-events: none !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-wheel-wrap .stw-pointer-vertical.ticking {
+                transform: translateX(-50%) scale(1.15) rotate(6deg) !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-copy-wrap {
+                width: 100% !important;
+                max-width: 460px !important;
+                padding: 16px 0 0 0 !important;
+                text-align: center !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-close-btn {
+                top: 14px !important;
+                right: 14px !important;
+                left: auto !important;
+            }
+        }
+
+        #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-grid {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            position: relative;
+            box-sizing: border-box;
+            padding: 0;
+            min-height: 480px;
+        }
+
+        /* Left Section: Big Half Wheel & 3 o'clock Pointer Directly Touching Rim */
+        #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap {
+            position: relative;
+            width: 330px;
+            height: 480px;
+            flex-shrink: 0;
+            overflow: visible;
+            display: flex;
+            align-items: center;
+        }
+        #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap .stw-wheel-side {
+            position: absolute;
+            left: -130px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 460px;
+            height: 460px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+        #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap .stw-svg {
+            width: 460px !important;
+            height: 460px !important;
+            filter: drop-shadow(0 6px 16px rgba(0,0,0,0.18));
+        }
+        /* Right-pointing-left ticker at 3 o'clock directly touching outer wheel rim with zero gap */
+        #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap .stw-pointer-horizontal {
+            position: absolute;
+            left: 308px;
+            right: auto;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 28px;
+            z-index: 30;
+            filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35));
+            transform-origin: 32px 14px;
+            transition: transform 0.1s ease;
+            pointer-events: none;
+            display: block;
+        }
+        #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap .stw-pointer-horizontal.ticking {
+            transform: translateY(-50%) scale(1.15) rotate(-8deg);
+        }
+        #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap .stw-pointer-vertical {
+            display: none;
+        }
+
+        /* Right Section: Copy & Form */
+        #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-copy-wrap {
+            padding: 40px 40px 40px 18px;
+            width: 350px;
+            max-width: 390px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        #{{ widgetId }}.stw-mode-sidebar .stw-headline {
+            font-size: 23px;
+            font-weight: 800;
+            line-height: 1.25;
+            color: var(--stw-headline-color, #0f172a);
+            margin: 0 0 6px;
+            letter-spacing: -0.02em;
+        }
+        #{{ widgetId }}.stw-mode-sidebar .stw-subtext {
+            font-size: 13px;
+            line-height: 1.45;
+            color: var(--stw-subtext-color, #64748b);
+            margin: 0;
+        }
+
+        /* Tablet Responsive Layout (769px to 1024px) */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-panel {
+                max-width: 630px !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap {
+                width: 290px !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap .stw-wheel-side {
+                left: -130px !important;
+                width: 420px !important;
+                height: 420px !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap .stw-svg {
+                width: 420px !important;
+                height: 420px !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap .stw-pointer-horizontal {
+                left: 280px !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-wheel-wrap .stw-wheel-side {
+                left: auto !important;
+                right: -130px !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-wheel-wrap .stw-pointer-horizontal {
+                right: 280px !important;
+                left: auto !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-copy-wrap {
+                padding: 30px 28px 30px 16px !important;
+                width: 320px !important;
+            }
+        }
+
+        /* Mobile Responsive Drawer (All Mobile Devices: Top Slide-down Stacked View) */
+        @media (max-width: 768px) {
+            #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-panel,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-left .stw-sidebar-panel,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-panel,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-panel {
+                top: 16px !important;
+                left: 50% !important;
+                right: auto !important;
+                bottom: auto !important;
+                width: calc(100vw - 28px) !important;
+                max-width: 380px !important;
+                max-height: calc(100vh - 32px) !important;
+                border-radius: 20px !important;
+                margin: 0 !important;
+                transform: translate(-50%, -140%) !important;
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4) !important;
+                overflow-y: auto !important;
+                box-sizing: border-box !important;
+            }
+            #{{ widgetId }}.stw-active.stw-mode-sidebar .stw-sidebar-panel,
+            #{{ widgetId }}.stw-active.stw-mode-sidebar.stw-sidebar-left .stw-sidebar-panel,
+            #{{ widgetId }}.stw-active.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-panel,
+            #{{ widgetId }}.stw-active.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-panel {
+                transform: translate(-50%, 0) !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-grid,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-left .stw-sidebar-grid,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-grid,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-grid {
+                flex-direction: column !important;
+                padding: 20px 16px 24px 16px !important;
+                min-height: auto !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                align-items: center !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-left .stw-sidebar-wheel-wrap,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-wheel-wrap,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-wheel-wrap {
+                width: 260px !important;
+                height: 260px !important;
+                justify-content: center !important;
+                margin: 0 auto !important;
+                position: relative !important;
+                overflow: visible !important;
+                box-sizing: border-box !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap .stw-wheel-side,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-left .stw-sidebar-wheel-wrap .stw-wheel-side,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-wheel-wrap .stw-wheel-side,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-wheel-wrap .stw-wheel-side {
+                position: relative !important;
+                left: auto !important;
+                right: auto !important;
+                top: auto !important;
+                transform: none !important;
+                width: 250px !important;
+                height: 250px !important;
+                margin: 8px auto 0 auto !important;
+                box-sizing: border-box !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap .stw-svg,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-left .stw-sidebar-wheel-wrap .stw-svg,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-wheel-wrap .stw-svg,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-wheel-wrap .stw-svg {
+                width: 250px !important;
+                height: 250px !important;
+                display: block !important;
+                margin: 0 auto !important;
+            }
+            /* Pin on Mobile: Native vertical pointer at 12 o'clock center starting from top of circle */
+            #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap .stw-pointer-horizontal,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-left .stw-sidebar-wheel-wrap .stw-pointer-horizontal,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-wheel-wrap .stw-pointer-horizontal,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-wheel-wrap .stw-pointer-horizontal {
+                display: none !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap .stw-pointer-vertical,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-left .stw-sidebar-wheel-wrap .stw-pointer-vertical,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-wheel-wrap .stw-pointer-vertical,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-wheel-wrap .stw-pointer-vertical {
+                display: block !important;
+                position: absolute !important;
+                top: -4px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                transform-origin: 14px 6px !important;
+                width: 28px !important;
+                height: 36px !important;
+                z-index: 35 !important;
+                filter: drop-shadow(0 3px 5px rgba(0,0,0,0.35)) !important;
+                transition: transform 0.1s ease !important;
+                pointer-events: none !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-wheel-wrap .stw-pointer-vertical.ticking,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-left .stw-sidebar-wheel-wrap .stw-pointer-vertical.ticking,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-wheel-wrap .stw-pointer-vertical.ticking,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-wheel-wrap .stw-pointer-vertical.ticking {
+                transform: translateX(-50%) scale(1.15) rotate(6deg) !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar .stw-sidebar-copy-wrap,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-left .stw-sidebar-copy-wrap,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-sidebar-copy-wrap,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-sidebar-copy-wrap {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 12px 14px 18px 14px !important;
+                box-sizing: border-box !important;
+                text-align: center !important;
+            }
+            #{{ widgetId }}.stw-mode-sidebar .stw-close-btn,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-left .stw-close-btn,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-right .stw-close-btn,
+            #{{ widgetId }}.stw-mode-sidebar.stw-sidebar-top .stw-close-btn {
+                position: absolute !important;
+                top: 12px !important;
+                right: 12px !important;
+                left: auto !important;
+                width: 32px !important;
+                height: 32px !important;
+                z-index: 50 !important;
+            }
+        }
+
+        /* Close Button */
+        #{{ widgetId }} .stw-close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            border: none;
+            color: #64748b;
+            font-size: 22px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            z-index: 50;
+        }
+        #{{ widgetId }} .stw-close-btn:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+        /* Desktop Modal Popup: 2-column layout with big wheel filling left section and form on right */
+        #{{ widgetId }}.stw-mode-popup .stw-content-grid {
+            display: grid;
+            grid-template-columns: 500px 1fr;
+            align-items: center;
+            width: 100%;
+            min-height: 520px;
+            gap: 0;
+        }
+        /* Modal Wheel Container (Left section filling specified area with big wheel) */
+        #{{ widgetId }}.stw-mode-popup .stw-wheel-side {
+            position: relative;
+            width: 500px;
+            height: 520px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            box-sizing: border-box;
+            background: radial-gradient(circle at center, #f8fafc 0%, #f1f5f9 100%);
+            border-right: 1px solid #f1f5f9;
+            user-select: none;
+        }
+        #{{ widgetId }}.stw-mode-popup .stw-wheel-side .stw-svg {
+            width: 460px;
+            height: 460px;
+        }
+        #{{ widgetId }}.stw-mode-popup .stw-wheel-side .stw-pointer {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 32px;
+            height: 42px;
+            z-index: 25;
+            filter: drop-shadow(0 3px 5px rgba(0,0,0,0.35));
+            transition: transform 0.1s ease;
+        }
+        #{{ widgetId }} .stw-pointer.ticking {
+            transform: translateX(-50%) scale(1.15) rotate(6deg);
+        }
+        /* Form & Copy Side (Right) */
+        #{{ widgetId }} .stw-copy-side {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            text-align: left;
+            padding: 40px 48px 40px 40px;
+            box-sizing: border-box;
+        }
+        /* Mobile Layout for Modal Popup: 100% Centered horizontally, equal left and right margins */
+        @media (max-width: 768px) {
+            #{{ widgetId }} .stw-modal-card,
+            #{{ widgetId }}.stw-mode-popup .stw-modal-card {
+                position: fixed !important;
+                top: 16px !important;
+                left: 50% !important;
+                right: auto !important;
+                bottom: auto !important;
+                width: calc(100vw - 28px) !important;
+                max-width: 380px !important;
+                max-height: calc(100vh - 32px) !important;
+                border-radius: 20px !important;
+                margin: 0 !important;
+                transform: translate(-50%, -140%) !important;
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4) !important;
+                padding: 24px 16px 28px 16px !important;
+                overflow-y: auto !important;
+                box-sizing: border-box !important;
+            }
+            #{{ widgetId }}.stw-active .stw-modal-card,
+            #{{ widgetId }}.stw-active.stw-mode-popup .stw-modal-card {
+                transform: translate(-50%, 0) !important;
+            }
+            #{{ widgetId }} .stw-content-grid,
+            #{{ widgetId }}.stw-mode-popup .stw-content-grid {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                min-height: auto !important;
+                gap: 14px !important;
+                width: 100% !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                box-sizing: border-box !important;
+            }
+            #{{ widgetId }} .stw-wheel-side,
+            #{{ widgetId }}.stw-mode-popup .stw-wheel-side {
+                width: 260px !important;
+                height: 260px !important;
+                background: transparent !important;
+                border-right: none !important;
+                padding: 0 !important;
+                margin: 0 auto !important;
+                position: relative !important;
+                overflow: visible !important;
+                box-sizing: border-box !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+            #{{ widgetId }} .stw-wheel-side .stw-svg,
+            #{{ widgetId }}.stw-mode-popup .stw-wheel-side .stw-svg {
+                width: 250px !important;
+                height: 250px !important;
+                display: block !important;
+                margin: 0 auto !important;
+            }
+            #{{ widgetId }} .stw-wheel-side .stw-pointer,
+            #{{ widgetId }}.stw-mode-popup .stw-wheel-side .stw-pointer {
+                position: absolute !important;
+                top: -4px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                width: 28px !important;
+                height: 36px !important;
+            }
+            #{{ widgetId }} .stw-copy-side,
+            #{{ widgetId }}.stw-mode-popup .stw-copy-side {
+                padding: 0 !important;
+                text-align: center !important;
+                width: 100% !important;
+                margin: 0 auto !important;
+                box-sizing: border-box !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+            }
+            #{{ widgetId }} .stw-modal-card .stw-close-btn,
+            #{{ widgetId }}.stw-mode-popup .stw-close-btn {
+                position: absolute !important;
+                top: 12px !important;
+                right: 12px !important;
+                left: auto !important;
+                width: 32px !important;
+                height: 32px !important;
+                z-index: 50 !important;
+            }
+        }
+        #{{ widgetId }} .stw-headline {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--stw-headline-color, #0f172a);
+            margin: 0;
+            line-height: 1.25;
+            letter-spacing: -0.02em;
+        }
+        #{{ widgetId }} .stw-subtext {
+            font-size: 14px;
+            color: var(--stw-subtext-color, #475569);
+            margin: 0;
+            line-height: 1.5;
+        }
+        #{{ widgetId }} .stw-input-field {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 14px;
+            border: 1.5px solid var(--stw-input-border, #cbd5e1);
+            border-radius: 8px;
+            color: var(--stw-input-text, #0f172a);
+            background: var(--stw-input-bg, #ffffff);
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        #{{ widgetId }} .stw-input-field:focus {
+            outline: none;
+            border-color: var(--stw-btn-bg, #4f46e5);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+        #{{ widgetId }} .stw-submit-btn {
+            background: var(--stw-btn-bg, #4f46e5);
+            color: var(--stw-btn-text, #ffffff);
+            border: none;
+            border-radius: 8px;
+            padding: 14px 24px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        #{{ widgetId }} .stw-submit-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45);
+        }
+        #{{ widgetId }} .stw-submit-btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            transform: none;
+        }
+        /* Pointer Ticking Feedback */
+        #{{ widgetId }} .stw-pointer.ticking {
+            transform: translateX(-50%) scale(1.15) rotate(6deg);
+        }
+        #{{ widgetId }} .stw-svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(0deg);
+            filter: drop-shadow(0 6px 18px rgba(0,0,0,0.15));
+            will-change: transform;
+        }
+        /* Result Screen */
+        #{{ widgetId }} .stw-result-panel {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            animation: stwFadeUp 0.35s ease;
+        }
+        @keyframes stwFadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        #{{ widgetId }} .stw-coupon-box {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            margin-top: 4px;
+        }
+        #{{ widgetId }} .stw-coupon-code {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            color: #4f46e5;
+            user-select: all;
+            margin-bottom: 8px;
+            font-family: monospace;
+        }
+        #{{ widgetId }} .stw-copy-btn {
+            background: var(--stw-btn-bg, #4f46e5);
+            color: var(--stw-btn-text, #ffffff);
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #{{ widgetId }} .stw-apply-cart-btn {
+            background: #059669;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #{{ widgetId }} .stw-apply-cart-btn:hover {
+            background: #047857;
+        }
+        #{{ widgetId }} .stw-apply-cart-btn.applied {
+            background: #10b981;
+            cursor: default;
+        }
+        #{{ widgetId }} .stw-error-alert {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: none;
+            line-height: 1.4;
+        }
+    </style>
+
+    {% if displayMode == 'popup' %}
+        <!-- Backdrop Overlay -->
+        <div class="stw-backdrop" onclick="window['stwWidget_{{ campaign.handle }}'].close()"></div>
+
+        <!-- Centered Modal -->
+        <div class="stw-modal-card">
+            <button type="button" class="stw-close-btn" aria-label="Close" onclick="window['stwWidget_{{ campaign.handle }}'].close()">&times;</button>
+            <div class="stw-content-grid">
+                <!-- Wheel Canvas Side (On Top) -->
+                <div class="stw-wheel-side">
+                    <div class="stw-pointer">
+                        <svg viewBox="0 0 28 36" width="28" height="36" fill="none">
+                            <path d="M14 36 L2 6 A 4 4 0 0 1 6 2 L22 2 A 4 4 0 0 1 26 6 Z" fill="{{ wheelSettings.pointerColor|default('#ef4444') }}" stroke="#ffffff" stroke-width="2"/>
+                            <circle cx="14" cy="8" r="3.5" fill="#ffffff" opacity="0.9"/>
+                        </svg>
+                    </div>
+                    <svg class="stw-svg" viewBox="0 0 400 400">
+                        <!-- Dynamically drawn by SVG engine -->
+                    </svg>
+                </div>
+
+                <!-- Form & Text View (Below Wheel) -->
+                <div class="stw-copy-side">
+                    <!-- Form State -->
+                    <div class="stw-form-panel">
+                        <h2 class="stw-headline">{{ campaign.welcomeTitle|default('Spin the Wheel to Win!') }}</h2>
+                        <p class="stw-subtext">{{ campaign.welcomeText|default('Enter your email below to spin the wheel and unlock an exclusive discount on your order.') }}</p>
+
+                        <div class="stw-error-alert" style="margin-top: 10px;"></div>
+
+                        <form class="stw-spin-form" onsubmit="event.preventDefault(); window['stwWidget_{{ campaign.handle }}'].spin();" style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+                            <input type="hidden" name="action" value="spin-to-win/spin/execute">
+                            <input type="hidden" name="campaignHandle" value="{{ campaign.handle }}">
+                            <input type="hidden" name="{{ csrfTokenName }}" value="{{ csrfTokenValue }}">
+
+                            {% if campaign.requireName %}
+                                <div>
+                                    <input type="text" name="name" class="stw-input-field stw-field-name" placeholder="{{ 'Your Name'|t('spin-to-win') }}" required>
+                                </div>
+                            {% endif %}
+
+                            <div>
+                                <input type="email" name="email" class="stw-input-field stw-field-email" placeholder="{{ 'Enter your email address'|t('spin-to-win') }}" required>
+                            </div>
+
+                            {% if campaign.requireConsent %}
+                                <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #64748b; cursor: pointer; user-select: none; text-align: left;">
+                                    <input type="checkbox" name="consent" class="stw-field-consent" style="margin-top: 2px;" required>
+                                    <span>{{ campaign.consentText|default('I agree to receive promotional offers and discount updates.') }}</span>
+                                </label>
+                            {% endif %}
+
+                            <button type="submit" class="stw-submit-btn">
+                                <span>{{ campaign.buttonText|default('Spin to Win!') }}</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Result State -->
+                    <div class="stw-result-panel">
+                        <h2 class="stw-headline stw-result-headline">{{ campaign.resultTitle|default('Congratulations!') }}</h2>
+                        <p class="stw-subtext stw-result-message">{{ campaign.resultText|default('Here is your promotional coupon code:') }}</p>
+
+                        <div class="stw-coupon-box">
+                            <div class="stw-coupon-code">WIN-CODE</div>
+                            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px;">
+                                <button type="button" class="stw-copy-btn" onclick="window['stwWidget_{{ campaign.handle }}'].copyCoupon(this)">
+                                    <span>{{ "Copy Code"|t('spin-to-win') }}</span>
+                                </button>
+                                <button type="button" class="stw-apply-cart-btn" onclick="window['stwWidget_{{ campaign.handle }}'].applyToCart(this)" style="display: none;">
+                                    <span>{{ "Apply to Cart"|t('spin-to-win') }}</span>
+                                </button>
+                            </div>
+                            <div class="stw-cart-feedback" style="display: none; font-size: 12px; color: #166534; font-weight: 600; margin-top: 8px;"></div>
+                            <div class="stw-expiry-note" style="font-size: 12px; color: #64748b; margin-top: 8px;"></div>
+                        </div>
+
+                        <button type="button" class="stw-submit-btn" onclick="window['stwWidget_{{ campaign.handle }}'].close()" style="margin-top: 12px;">
+                            <span>{{ "Continue Shopping"|t('spin-to-win') }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- Slide-in Sidebar Panel (Half-Wheel Desktop Drawer) -->
+        <div class="stw-sidebar-panel">
+            <button type="button" class="stw-close-btn" aria-label="Close" onclick="window['stwWidget_{{ campaign.handle }}'].close()">&times;</button>
+            <div class="stw-sidebar-grid">
+                <!-- Half-Wheel Container (Left) -->
+                <div class="stw-sidebar-wheel-wrap">
+                    <div class="stw-wheel-side">
+                        <svg class="stw-svg" viewBox="0 0 400 400"></svg>
+                    </div>
+                    <!-- Horizontal Pointer (Desktop Left/Right Sidebar Drawer) -->
+                    <div class="stw-pointer stw-pointer-horizontal">
+                        <svg viewBox="0 0 36 28" width="36" height="28" fill="none">
+                            <path d="M 0 14 L 30 2 A 4 4 0 0 1 34 6 L 34 22 A 4 4 0 0 1 30 26 Z" fill="{{ wheelSettings.pointerColor|default('#ef4444') }}" stroke="#ffffff" stroke-width="2"/>
+                            <circle cx="26" cy="14" r="3.5" fill="#ffffff" opacity="0.95"/>
+                        </svg>
+                    </div>
+                    <!-- Vertical Pointer (Top Slide-down Sidebar & Mobile View) -->
+                    <div class="stw-pointer stw-pointer-vertical">
+                        <svg viewBox="0 0 28 36" width="28" height="36" fill="none">
+                            <path d="M14 36 L2 6 A 4 4 0 0 1 6 2 L22 2 A 4 4 0 0 1 26 6 Z" fill="{{ wheelSettings.pointerColor|default('#ef4444') }}" stroke="#ffffff" stroke-width="2"/>
+                            <circle cx="14" cy="8" r="3.5" fill="#ffffff" opacity="0.9"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Form & Text Section (Right) -->
+                <div class="stw-sidebar-copy-wrap">
+                    <!-- Form Panel -->
+                    <div class="stw-form-panel">
+                        <h3 class="stw-headline">{{ campaign.welcomeTitle|default('Spin to Win Holiday Discounts!') }}</h3>
+                        <p class="stw-subtext">{{ campaign.welcomeText|default('Enter your email for a chance to win up to 25% off.') }}</p>
+
+                        <div class="stw-error-alert" style="margin-top: 8px;"></div>
+
+                        <form class="stw-spin-form" onsubmit="event.preventDefault(); window['stwWidget_{{ campaign.handle }}'].spin();" style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+                            <input type="hidden" name="action" value="spin-to-win/spin/execute">
+                            <input type="hidden" name="campaignHandle" value="{{ campaign.handle }}">
+                            <input type="hidden" name="{{ csrfTokenName }}" value="{{ csrfTokenValue }}">
+
+                            {% if campaign.requireName %}
+                                <input type="text" name="name" class="stw-input-field stw-field-name" placeholder="{{ 'Your Name'|t('spin-to-win') }}" required>
+                            {% endif %}
+
+                            <input type="email" name="email" class="stw-input-field stw-field-email" placeholder="{{ 'Enter email address'|t('spin-to-win') }}" required>
+
+                            {% if campaign.requireConsent %}
+                                <label style="display: flex; align-items: flex-start; gap: 6px; font-size: 11px; color: #64748b; cursor: pointer;">
+                                    <input type="checkbox" name="consent" class="stw-field-consent" required>
+                                    <span>{{ campaign.consentText|default('I agree to receive promotional offers.') }}</span>
+                                </label>
+                            {% endif %}
+
+                            <button type="submit" class="stw-submit-btn">
+                                <span>{{ campaign.buttonText|default('Spin the Holiday Wheel!') }}</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Result Panel -->
+                    <div class="stw-result-panel">
+                        <h3 class="stw-headline stw-result-headline">{{ campaign.resultTitle|default('Congratulations!') }}</h3>
+                        <p class="stw-subtext stw-result-message">{{ campaign.resultText|default('Here is your coupon:') }}</p>
+
+                        <div class="stw-coupon-box">
+                            <div class="stw-coupon-code">WIN-CODE</div>
+                            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 8px;">
+                                <button type="button" class="stw-copy-btn" onclick="window['stwWidget_{{ campaign.handle }}'].copyCoupon(this)">
+                                    <span>{{ "Copy Code"|t('spin-to-win') }}</span>
+                                </button>
+                                <button type="button" class="stw-apply-cart-btn" onclick="window['stwWidget_{{ campaign.handle }}'].applyToCart(this)" style="display: none;">
+                                    <span>{{ "Apply to Cart"|t('spin-to-win') }}</span>
+                                </button>
+                            </div>
+                            <div class="stw-cart-feedback" style="display: none; font-size: 12px; color: #166534; font-weight: 600; margin-top: 8px;"></div>
+                            <div class="stw-expiry-note" style="font-size: 11px; color: #64748b; margin-top: 6px;"></div>
+                        </div>
+
+                        <button type="button" class="stw-submit-btn" onclick="window['stwWidget_{{ campaign.handle }}'].close()" style="margin-top: 10px;">
+                            <span>{{ "Continue Shopping"|t('spin-to-win') }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Scoped JavaScript Engine -->
+<script>
+(function() {
+    const handle = {{ campaign.handle|json_encode|raw }};
+    const rootEl = document.getElementById({{ widgetId|json_encode|raw }});
+    if (!rootEl) return;
+
+    // Check if test bypass is requested (?spin=1 or ?spin=force or ?test_spin=1)
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceShow = urlParams.has('test_spin') || urlParams.get('spin') === 'force' || urlParams.get('spin') === '1';
+
+    // Once wheel is spun and coupon copied, it should NOT be shown again on any page
+    let hasCompleted = false;
+    try {
+        hasCompleted = (
+            localStorage.getItem('stw_completed_' + handle) === '1' ||
+            !!localStorage.getItem('stw_spun_' + handle) ||
+            document.cookie.indexOf('stw_completed_' + encodeURIComponent(handle) + '=1') !== -1
+        );
+    } catch(e) {}
+
+    if (hasCompleted && !forceShow) {
+        // Destroy and remove widget from DOM completely so it is never shown again on any page
+        rootEl.remove();
+        return;
+    }
+
+    function markCampaignCompleted() {
+        try {
+            localStorage.setItem('stw_completed_' + handle, '1');
+            localStorage.setItem('stw_spun_' + handle, Date.now().toString());
+            document.cookie = 'stw_completed_' + encodeURIComponent(handle) + '=1; path=/; max-age=31536000; SameSite=Lax';
+        } catch(e) {}
+    }
+
+    const segments = [
+        {% for seg in segments %}
+            {
+                id: {{ seg.id|json_encode|raw }},
+                label: {{ seg.label|json_encode|raw }},
+                color: {{ seg.color|json_encode|raw }},
+                textColor: {{ seg.textColor|json_encode|raw }},
+                rewardType: {{ seg.rewardType|json_encode|raw }}
+            },
+        {% endfor %}
+    ];
+
+    const wheelConfig = {
+        hubText: {{ wheelSettings.hubText|default('SPIN')|json_encode|raw }},
+        hubColor: {{ wheelSettings.hubColor|default('#ffffff')|json_encode|raw }},
+        hubTextColor: {{ wheelSettings.hubTextColor|default('#0f172a')|json_encode|raw }},
+        rimColor: {{ wheelSettings.rimColor|default('#1e293b')|json_encode|raw }},
+        pointerColor: {{ wheelSettings.pointerColor|default('#ef4444')|json_encode|raw }}
+    };
+
+    let currentRotation = 0;
+    let isSpinning = false;
+    let audioCtx = null;
+
+    function playTick() {
+        try {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(650, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.04);
+            gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.04);
+        } catch(e) {}
+    }
+
+    function renderSvgWheel() {
+        const svgs = rootEl.querySelectorAll('.stw-svg');
+        const total = segments.length;
+        if (total === 0) return;
+
+        const cx = 200, cy = 200, outerR = 194, sliceR = 176, hubR = 46;
+        const sliceAngle = 360 / total;
+        let html = '';
+
+        // 1. Outer rim
+        html += `<circle cx="${cx}" cy="${cy}" r="${outerR}" fill="${wheelConfig.rimColor}" stroke="#ffffff" stroke-width="3"/>`;
+
+        // 2. LED rim dots
+        const dots = Math.max(16, total * 3);
+        for (let d = 0; d < dots; d++) {
+            const rad = (d * (360 / dots)) * (Math.PI / 180);
+            const x = cx + (outerR - 9) * Math.cos(rad);
+            const y = cy + (outerR - 9) * Math.sin(rad);
+            html += `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="3" fill="#ffffff" opacity="0.9"/>`;
+        }
+
+        // 3. Slices
+        for (let i = 0; i < total; i++) {
+            const seg = segments[i];
+            const startRad = (i * sliceAngle - 90) * (Math.PI / 180);
+            const endRad = ((i + 1) * sliceAngle - 90) * (Math.PI / 180);
+
+            const x1 = cx + sliceR * Math.cos(startRad);
+            const y1 = cy + sliceR * Math.sin(startRad);
+            const x2 = cx + sliceR * Math.cos(endRad);
+            const y2 = cy + sliceR * Math.sin(endRad);
+
+            const largeArc = sliceAngle > 180 ? 1 : 0;
+            const pathD = `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${sliceR} ${sliceR} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
+            html += `<path d="${pathD}" fill="${seg.color}" stroke="#ffffff" stroke-width="1.5"/>`;
+
+            // Radial Text
+            const midDeg = (i * sliceAngle) + (sliceAngle / 2) - 90;
+            const tx = cx + (sliceR * 0.62) * Math.cos(midDeg * Math.PI / 180);
+            const ty = cy + (sliceR * 0.62) * Math.sin(midDeg * Math.PI / 180);
+            const textRot = midDeg + 90;
+
+            let label = seg.label;
+            if (label.length > 14) label = label.substring(0, 12) + '…';
+
+            html += `<g transform="translate(${tx.toFixed(2)}, ${ty.toFixed(2)}) rotate(${textRot.toFixed(2)})">
+                <text x="0" y="4" text-anchor="middle" fill="${seg.textColor}" font-size="12" font-weight="700" font-family="system-ui, -apple-system, sans-serif" style="user-select: none;">
+                    ${label}
+                </text>
+            </g>`;
+        }
+
+        // 4. Center Hub
+        html += `
+            <circle cx="${cx}" cy="${cy}" r="${hubR + 6}" fill="rgba(0,0,0,0.15)"/>
+            <circle cx="${cx}" cy="${cy}" r="${hubR + 2}" fill="${wheelConfig.rimColor}"/>
+            <circle cx="${cx}" cy="${cy}" r="${hubR}" fill="${wheelConfig.hubColor}" stroke="#ffffff" stroke-width="2"/>
+            <text x="${cx}" y="${cy + 5}" text-anchor="middle" fill="${wheelConfig.hubTextColor}" font-size="14" font-weight="800" font-family="system-ui, -apple-system, sans-serif" letter-spacing="1" style="user-select: none;">
+                ${wheelConfig.hubText}
+            </text>
+        `;
+
+        svgs.forEach(svg => svg.innerHTML = html);
+    }
+
+    // Public Widget Controller Instance
+    window['stwWidget_' + handle] = {
+        open: function() {
+            if (hasCompleted && !forceShow) {
+                return;
+            }
+            rootEl.classList.add('stw-active');
+            try {
+                sessionStorage.removeItem('stw_dismissed_' + handle);
+            } catch(e) {}
+
+            // Record impression event
+            fetch({{ actionUrl('spin-to-win/spin/record-view')|json_encode|raw }}, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    campaignHandle: handle,
+                    {{ csrfTokenName|json_encode|raw }}: {{ csrfTokenValue|json_encode|raw }}
+                })
+            }).catch(() => {});
+        },
+
+        close: function() {
+            rootEl.classList.remove('stw-active');
+            // Permanently dismiss widget once closed by clicking 'X' or spinning, so it is NEVER shown again on any page
+            markCampaignCompleted();
+            setTimeout(() => {
+                if (!forceShow) {
+                    rootEl.remove();
+                }
+            }, 500);
+        },
+
+        copyCoupon: function(btn) {
+            const codeEl = rootEl.querySelector('.stw-coupon-code');
+            if (!codeEl) return;
+            const code = codeEl.textContent.trim();
+            if (!code) return;
+
+            const originalHtml = btn.innerHTML;
+            const originalBg = btn.style.background;
+
+            const onCopied = function() {
+                markCampaignCompleted();
+                btn.innerHTML = '<span>' + {{ 'Copied! ✔'|t('spin-to-win')|json_encode|raw }} + '</span>';
+                btn.style.background = '#10b981';
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.style.background = originalBg || '#4f46e5';
+                }, 2200);
+            };
+
+            // Modern clipboard API with reliable fallback for HTTP / non-secure contexts
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(code).then(onCopied).catch(() => {
+                    fallbackCopy(code, onCopied);
+                });
+            } else {
+                fallbackCopy(code, onCopied);
+            }
+
+            function fallbackCopy(text, callback) {
+                try {
+                    const temp = document.createElement('textarea');
+                    temp.value = text;
+                    temp.setAttribute('readonly', '');
+                    temp.style.position = 'fixed';
+                    temp.style.top = '-9999px';
+                    temp.style.left = '-9999px';
+                    document.body.appendChild(temp);
+                    temp.focus();
+                    temp.select();
+                    const success = document.execCommand('copy');
+                    document.body.removeChild(temp);
+                    if (success) {
+                        callback();
+                    } else {
+                        window.prompt({{ 'Copy your coupon code:'|t('spin-to-win')|json_encode|raw }}, text);
+                    }
+                } catch(e) {
+                    window.prompt({{ 'Copy your coupon code:'|t('spin-to-win')|json_encode|raw }}, text);
+                }
+            }
+        },
+
+        applyToCart: function(btn) {
+            const codeEl = rootEl.querySelector('.stw-coupon-code');
+            if (!codeEl) return;
+            const code = codeEl.textContent.trim();
+            if (!code) return;
+
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span>' + {{ 'Applying...'|t('spin-to-win')|json_encode|raw }} + '</span>';
+
+            const postData = new URLSearchParams({
+                action: 'spin-to-win/spin/apply-cart',
+                couponCode: code,
+                {{ csrfTokenName|json_encode|raw }}: {{ csrfTokenValue|json_encode|raw }}
+            });
+
+            fetch({{ actionUrl('spin-to-win/spin/apply-cart')|json_encode|raw }}, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: postData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    markCampaignCompleted();
+                    btn.classList.add('applied');
+                    btn.innerHTML = '<span>' + {{ '✔ Applied to Cart!'|t('spin-to-win')|json_encode|raw }} + '</span>';
+                    const feedbacks = rootEl.querySelectorAll('.stw-cart-feedback');
+                    feedbacks.forEach(el => {
+                        el.textContent = data.message || {{ 'Coupon applied to your cart!'|t('spin-to-win')|json_encode|raw }};
+                        el.style.display = 'block';
+                    });
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    alert(data.message || {{ 'Failed to apply coupon to cart.'|t('spin-to-win')|json_encode|raw }});
+                }
+            })
+            .catch(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                alert({{ 'Could not connect to shopping cart.'|t('spin-to-win')|json_encode|raw }});
+            });
+        },
+
+        spin: function() {
+            if (isSpinning) return;
+
+            const form = rootEl.querySelector('.stw-spin-form');
+            const emailInput = rootEl.querySelector('.stw-field-email');
+            const nameInput = rootEl.querySelector('.stw-field-name');
+            const consentInput = rootEl.querySelector('.stw-field-consent');
+            const errorAlert = rootEl.querySelector('.stw-error-alert');
+            const submitBtn = rootEl.querySelector('.stw-submit-btn');
+
+            if (errorAlert) errorAlert.style.display = 'none';
+
+            if (!emailInput || !emailInput.value.trim()) {
+                if (errorAlert) {
+                    errorAlert.textContent = {{ 'Please enter your email address.'|t('spin-to-win')|json_encode|raw }};
+                    errorAlert.style.display = 'block';
+                }
+                return;
+            }
+
+            if (consentInput && !consentInput.checked) {
+                if (errorAlert) {
+                    errorAlert.textContent = {{ 'Please agree to the terms to spin.'|t('spin-to-win')|json_encode|raw }};
+                    errorAlert.style.display = 'block';
+                }
+                return;
+            }
+
+            isSpinning = true;
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span>' + {{ 'Spinning...'|t('spin-to-win')|json_encode|raw }} + '</span>';
+            }
+
+            // AJAX request to execute spin
+            const postData = new URLSearchParams({
+                action: 'spin-to-win/spin/execute',
+                campaignHandle: handle,
+                email: emailInput.value.trim(),
+                name: nameInput ? nameInput.value.trim() : '',
+                consent: consentInput ? (consentInput.checked ? '1' : '0') : '1',
+                {{ csrfTokenName|json_encode|raw }}: {{ csrfTokenValue|json_encode|raw }}
+            });
+
+            fetch({{ actionUrl('spin-to-win/spin/execute')|json_encode|raw }}, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: postData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) {
+                    isSpinning = false;
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span>' + {{ campaign.buttonText|default('Spin to Win!')|json_encode|raw }} + '</span>';
+                    }
+                    if (errorAlert) {
+                        errorAlert.textContent = data.message || {{ 'Failed to execute spin. Please try again.'|t('spin-to-win')|json_encode|raw }};
+                        errorAlert.style.display = 'block';
+                    }
+                    return;
+                }
+
+                // Server returned winner! Calculate landing angle
+                const winnerIndex = data.segmentIndex;
+                const total = segments.length;
+                const sliceAngle = 360 / total;
+
+                // Landing angle calculation:
+                // For modal popup (or mobile top), pointer is at 12 o'clock (0 deg).
+                // For desktop sidebar, pointer is at 3 o'clock (90 deg from 12 o'clock).
+                const isSidebarDesktop = rootEl.classList.contains('stw-mode-sidebar') && window.innerWidth > 768;
+                let pointerAngle = 0;
+                if (isSidebarDesktop) {
+                    if (rootEl.classList.contains('stw-sidebar-right')) {
+                        pointerAngle = 270;
+                    } else if (rootEl.classList.contains('stw-sidebar-top')) {
+                        pointerAngle = 0;
+                    } else {
+                        pointerAngle = 90;
+                    }
+                }
+                const sliceCenterAngle = (winnerIndex + 0.5) * sliceAngle;
+                const targetLandingAngle = (pointerAngle - sliceCenterAngle + 3600) % 360;
+
+                // Add slight random jitter
+                const jitter = (Math.random() - 0.5) * (sliceAngle * 0.7);
+
+                // 6 to 8 full spins
+                const fullSpins = (6 + Math.floor(Math.random() * 2)) * 360;
+                const finalRotation = currentRotation + fullSpins + (targetLandingAngle - (currentRotation % 360)) + jitter;
+
+                const svgs = rootEl.querySelectorAll('.stw-svg');
+                const pointers = rootEl.querySelectorAll('.stw-pointer');
+                const durationMs = 4500;
+
+                svgs.forEach(svg => {
+                    svg.style.transition = `transform ${durationMs}ms cubic-bezier(0.12, 0.85, 0.2, 1)`;
+                    svg.style.transform = `rotate(${finalRotation}deg)`;
+                });
+
+                // Ticking feedback
+                const startTickTime = Date.now();
+                function triggerTick() {
+                    const elapsed = Date.now() - startTickTime;
+                    const progress = elapsed / durationMs;
+                    if (progress >= 1) return;
+
+                    playTick();
+                    if (pointers.length) {
+                        pointers.forEach(p => p.classList.add('ticking'));
+                        setTimeout(() => pointers.forEach(p => p.classList.remove('ticking')), 60);
+                    }
+
+                    const nextDelay = 50 + Math.pow(progress, 3) * 350;
+                    if (progress < 0.98) {
+                        setTimeout(triggerTick, nextDelay);
+                    }
+                }
+                setTimeout(triggerTick, 100);
+
+                // Spin Completion
+                setTimeout(() => {
+                    currentRotation = finalRotation;
+                    isSpinning = false;
+
+                    // Transition to Result Screen
+                    const formPanel = rootEl.querySelector('.stw-form-panel');
+                    const resultPanel = rootEl.querySelector('.stw-result-panel');
+                    const resultHeadline = rootEl.querySelector('.stw-result-headline');
+                    const resultMsg = rootEl.querySelector('.stw-result-message');
+                    const couponBox = rootEl.querySelector('.stw-coupon-box');
+                    const couponCodeEl = rootEl.querySelector('.stw-coupon-code');
+                    const expiryNote = rootEl.querySelector('.stw-expiry-note');
+
+                    if (resultHeadline) resultHeadline.textContent = data.resultTitle;
+                    if (resultMsg) resultMsg.textContent = data.resultText;
+
+                    if (data.isWinner && data.couponCode) {
+                        if (couponCodeEl) couponCodeEl.textContent = data.couponCode;
+                        if (expiryNote && data.expiresAt) {
+                            expiryNote.textContent = {{ 'Valid through: '|t('spin-to-win')|json_encode|raw }} + data.expiresAt;
+                        }
+                        if (couponBox) couponBox.style.display = 'block';
+
+                        // Show Apply to Cart button if Craft Commerce discount is active
+                        if (data.commerceAvailable) {
+                            const applyBtns = rootEl.querySelectorAll('.stw-apply-cart-btn');
+                            applyBtns.forEach(btn => {
+                                btn.style.display = 'inline-flex';
+                                btn.classList.remove('applied');
+                                btn.disabled = false;
+                            });
+                        }
+                    } else {
+                        if (couponBox) couponBox.style.display = 'none';
+                    }
+
+                    if (formPanel) formPanel.style.display = 'none';
+                    if (resultPanel) resultPanel.style.display = 'flex';
+
+                    // Remember that user has spun and completed
+                    markCampaignCompleted();
+                }, durationMs + 100);
+            })
+            .catch(err => {
+                isSpinning = false;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span>' + {{ campaign.buttonText|default('Spin to Win!')|json_encode|raw }} + '</span>';
+                }
+                if (errorAlert) {
+                    errorAlert.textContent = {{ 'Network error. Please try again.'|t('spin-to-win')|json_encode|raw }};
+                    errorAlert.style.display = 'block';
+                }
+            });
+        }
+    };
+
+    // Initialize SVG Wheel
+    renderSvgWheel();
+
+    // Trigger Evaluation
+    const trigger = rootEl.getAttribute('data-trigger');
+    const delaySec = parseInt(rootEl.getAttribute('data-delay') || '0', 10);
+    const scrollPct = parseInt(rootEl.getAttribute('data-scroll') || '0', 10);
+
+    // Check if dismissed or already completed
+    if (hasCompleted && !forceShow) {
+        return;
+    }
+
+    let isDismissedRecently = false;
+    try {
+        if (!forceShow) {
+            const navEntries = (window.performance && performance.getEntriesByType) ? performance.getEntriesByType('navigation') : [];
+            const isReload = navEntries.length > 0 && navEntries[0].type === 'reload';
+            const dismissedVal = sessionStorage.getItem('stw_dismissed_' + handle);
+            const dismissedAt = parseInt(dismissedVal || '0', 10);
+
+            // On page reload or after 30s, clear session dismissal so triggers fire cleanly
+            if (isReload || dismissedVal === '1' || (dismissedAt && (Date.now() - dismissedAt > 30000))) {
+                sessionStorage.removeItem('stw_dismissed_' + handle);
+                isDismissedRecently = false;
+            } else if (dismissedAt) {
+                isDismissedRecently = true;
+            }
+        }
+    } catch(e) {}
+
+    // Allow manual open triggers on the page: [data-spin-trigger="handle"]
+    document.querySelectorAll('[data-spin-trigger="' + handle + '"]').forEach(el => {
+        el.addEventListener('click', function(e) {
+            e.preventDefault();
+            window['stwWidget_' + handle].open();
+        });
+    });
+
+    // If not dismissed recently, evaluate automatic trigger based on admin settings
+    if (!isDismissedRecently) {
+        if (trigger === 'load') {
+            setTimeout(() => window['stwWidget_' + handle].open(), 400);
+        } else if (trigger === 'delay') {
+            const delayMs = Math.max(0, delaySec) * 1000;
+            setTimeout(() => window['stwWidget_' + handle].open(), delayMs);
+        } else if (trigger === 'scroll') {
+            let scrollFired = false;
+            const targetPct = scrollPct > 0 ? scrollPct : 20;
+            const onScroll = function() {
+                if (scrollFired) return;
+                const scrollTop = window.scrollY || document.documentElement.scrollTop;
+                const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+                if (docHeight > 0) {
+                    const pct = (scrollTop / docHeight) * 100;
+                    if (pct >= targetPct) {
+                        scrollFired = true;
+                        window.removeEventListener('scroll', onScroll);
+                        window['stwWidget_' + handle].open();
+                    }
+                }
+            };
+            window.addEventListener('scroll', onScroll, { passive: true });
+            // Evaluate in case page loads already scrolled
+            onScroll();
+        } else if (trigger === 'exit') {
+            let exitFired = false;
+            document.addEventListener('mouseleave', function(e) {
+                if (exitFired) return;
+                if (e.clientY <= 10) {
+                    exitFired = true;
+                    window['stwWidget_' + handle].open();
+                }
+            });
+        }
+    }
+})();
+</script>
+{% endif %}

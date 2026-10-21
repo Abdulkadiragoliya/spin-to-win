@@ -1,0 +1,87 @@
+{# Inner settings form fields for Spin to Win #}
+{% import "_includes/forms.twig" as forms %}
+
+{% set currentVals = siteValues ?? settings %}
+
+<div class="field">
+    <div class="heading">
+        <label>{{ "Active Edition"|t('spin-to-win') }}</label>
+        <div class="instructions">
+            <p>{{ "Current license edition installed in this Craft environment."|t('spin-to-win') }}</p>
+        </div>
+    </div>
+    <div class="input">
+        <span style="display: inline-flex; align-items: center; justify-content: center; height: 26px; padding: 0 12px; border-radius: 13px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; background: {{ isPlus ? '#059669' : '#0284c7' }}; color: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
+            {{ isPlus ? 'Plus Edition' : 'Lite Edition' }}
+        </span>
+        <span style="margin-left: 10px; color: #64748b; font-size: 13px;">
+            {% if isPlus %}
+                {{ "All advanced marketing features, scheduling, and multi-site targeting unlocked."|t('spin-to-win') }}
+            {% else %}
+                {{ "Core features active. Upgrade to Plus for multi-site targeting, scheduling, and automated winner emails."|t('spin-to-win') }}
+            {% endif %}
+        </span>
+    </div>
+</div>
+
+<hr style="margin: 20px 0; border: none; border-top: 1px solid #e2e8f0;">
+
+{{ forms.textField({
+    label: "Sender Name"|t('spin-to-win'),
+    instructions: "Name used in email notifications sent to customers from this site."|t('spin-to-win'),
+    id: 'emailSenderName',
+    name: 'emailSenderName',
+    value: currentVals.emailSenderName,
+    errors: settings.getErrors('emailSenderName'),
+    placeholder: "Store Marketing"
+}) }}
+
+{{ forms.textField({
+    label: "Sender Email Address"|t('spin-to-win'),
+    instructions: "Email address used in the From header for notifications from this site."|t('spin-to-win'),
+    id: 'emailSenderAddress',
+    name: 'emailSenderAddress',
+    value: currentVals.emailSenderAddress,
+    errors: settings.getErrors('emailSenderAddress'),
+    placeholder: "noreply@yourdomain.com"
+}) }}
+
+{{ forms.textField({
+    label: "Reply-To Address"|t('spin-to-win'),
+    instructions: "Optional reply-to email address for this site."|t('spin-to-win'),
+    id: 'emailReplyTo',
+    name: 'emailReplyTo',
+    value: currentVals.emailReplyTo,
+    errors: settings.getErrors('emailReplyTo'),
+    placeholder: "support@yourdomain.com"
+}) }}
+
+<hr style="margin: 20px 0; border: none; border-top: 1px solid #e2e8f0;">
+
+{{ forms.lightswitchField({
+    label: "Track Impressions"|t('spin-to-win'),
+    instructions: "Log anonymous wheel impressions on page visits to accurately calculate conversion rates."|t('spin-to-win'),
+    id: 'trackImpressions',
+    name: 'trackImpressions',
+    on: currentVals.trackImpressions
+}) }}
+
+{{ forms.lightswitchField({
+    label: "Prune Old Spin Logs"|t('spin-to-win'),
+    instructions: "Automatically delete historical spin attempts older than the retention window."|t('spin-to-win'),
+    id: 'pruneOldSpins',
+    name: 'pruneOldSpins',
+    on: currentVals.pruneOldSpins
+}) }}
+
+<div id="retention-container" style="{{ not currentVals.pruneOldSpins ? 'display: none;' : '' }}">
+    {{ forms.textField({
+        label: "Data Retention Window (Days)"|t('spin-to-win'),
+        instructions: "Number of days before completed spin records are safely pruned."|t('spin-to-win'),
+        id: 'retentionDays',
+        name: 'retentionDays',
+        type: 'number',
+        value: currentVals.retentionDays,
+        errors: settings.getErrors('retentionDays')
+    }) }}
+</div>

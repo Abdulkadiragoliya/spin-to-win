@@ -1,0 +1,158 @@
+<?php
+namespace abdulkadiragoliya\spintowin\services;
+
+use Craft;
+use abdulkadiragoliya\spintowin\SpinToWin;
+use yii\base\Component;
+use yii\web\ForbiddenHttpException;
+
+/**
+ * Edition & Feature Gatekeeper Service
+ *
+ * Handles Lite and Plus edition verification and server-side feature access control.
+ *
+ * @author Abdulkadir Agoliya
+ * @since 1.0.0
+ */
+class Editions extends Component
+{
+    public const FEATURE_SCHEDULING = 'scheduling';
+    public const FEATURE_ADVANCED_TRIGGERS = 'advanced_triggers';
+    public const FEATURE_ADVANCED_RESTRICTIONS = 'advanced_restrictions';
+    public const FEATURE_EMAIL_DELIVERY = 'email_delivery';
+    public const FEATURE_EMAIL_VERIFICATION = 'email_verification';
+    public const FEATURE_ADVANCED_REPORTS = 'advanced_reports';
+    public const FEATURE_CSV_EXPORT = 'csv_export';
+    public const FEATURE_MULTISITE = 'multisite';
+    public const FEATURE_ADVANCED_STYLING = 'advanced_styling';
+
+    /**
+     * @var array Feature definitions mapped to required minimum edition
+     */
+    protected static array $featureMap = [
+        self::FEATURE_SCHEDULING => SpinToWin::EDITION_PLUS,
+        self::FEATURE_ADVANCED_TRIGGERS => SpinToWin::EDITION_PLUS,
+        self::FEATURE_ADVANCED_RESTRICTIONS => SpinToWin::EDITION_PLUS,
+        self::FEATURE_EMAIL_DELIVERY => SpinToWin::EDITION_PLUS,
+        self::FEATURE_EMAIL_VERIFICATION => SpinToWin::EDITION_PLUS,
+        self::FEATURE_ADVANCED_REPORTS => SpinToWin::EDITION_PLUS,
+        self::FEATURE_CSV_EXPORT => SpinToWin::EDITION_PLUS,
+        self::FEATURE_MULTISITE => SpinToWin::EDITION_PLUS,
+        self::FEATURE_ADVANCED_STYLING => SpinToWin::EDITION_PLUS,
+    ];
+
+    /**
+     * Get the active plugin edition
+     *
+     * @return string
+     */
+    public function getEdition(): string
+    {
+        return SpinToWin::getInstance()->getEdition();
+    }
+
+    /**
+     * Check if the current edition is Plus (or higher)
+     *
+     * @return bool
+     */
+    public function isPlus(): bool
+    {
+        return SpinToWin::getInstance()->is(SpinToWin::EDITION_PLUS, '>=');
+    }
+
+    /**
+     * Check if a specific feature is enabled in the current edition
+     *
+     * @param string $feature
+     * @return bool
+     */
+    public function hasFeature(string $feature): bool
+    {
+        if (!isset(self::$featureMap[$feature])) {
+            return true;
+        }
+
+        $required = self::$featureMap[$feature];
+        return SpinToWin::getInstance()->is($required, '>=');
+    }
+
+    /**
+     * Enforce a feature requirement, throwing ForbiddenHttpException if not entitled.
+     *
+     * @param string $feature
+     * @param string|null $message
+     * @throws ForbiddenHttpException
+     */
+    public function requireFeature(string $feature, ?string $message = null): void
+    {
+        if (!$this->hasFeature($feature)) {
+            $msg = $message ?? Craft::t(
+                'spin-to-win',
+                'This feature requires the Spin to Win Plus edition.'
+            );
+            throw new ForbiddenHttpException($msg);
+        }
+    }
+
+    /**
+     * Convenience method to require Plus edition
+     *
+     * @param string|null $featureName
+     * @throws ForbiddenHttpException
+     */
+    public function requirePlus(?string $featureName = null): void
+    {
+        if (!$this->isPlus()) {
+            $suffix = $featureName ? " ($featureName)" : '';
+            throw new ForbiddenHttpException(
+                Craft::t('spin-to-win', 'This action requires the Spin to Win Plus edition{suffix}.', [
+                    'suffix' => $suffix,
+                ])
+            );
+        }
+    }
+
+    /**
+     * Returns the full feature matrix for marketing/admin presentation
+     *
+     * @return array
+     */
+    public function getFeatureMatrix(): array
+    {
+        return [
+            'lite' => [
+                'name' => 'Lite',
+                'description' => 'Core spin-to-win prize wheel for engaging visitors and growing sales.',
+                'features' => [
+                    'Interactive Wheel Builder',
+                    'Custom Segment Labels & Colors',
+                    'Center Logo Support',
+                    'Modal Popup & Slide-in Sidebar Modes',
+                    'Campaign Management & Status Controls',
+                    'Server-Enforced Daily Spin Limits',
+                    'Weighted Cryptographic RNG Prize Selection',
+                    'Genuine Craft Commerce Coupon Generation',
+                    'Standard Welcome & Result Screens',
+                ],
+            ],
+            'plus' => [
+                'name' => 'Plus',
+                'description' => 'Advanced marketing, automation, deep analytics, and multi-site management.',
+                'features' => [
+                    'All Lite Features',
+                    'Advanced Wheel Layout & Particle Animations',
+                    'Advanced Display Triggers (Scroll Threshold, Exit-Intent, Inactivity)',
+                    'Campaign Start & End Scheduling (Date/Time)',
+                    'Advanced Coupon Expiry Rules & Minimum Order Totals',
+                    'Email Delivery with Customizable HTML Templates',
+                    'Double Opt-In Email Verification Tokens',
+                    'Comprehensive Analytics & Conversion Funnel',
+                    'Safe CSV Report Streaming & Data Export',
+                    'Multi-Site Assignment & Regional Targeting',
+                    'Full Customer Localization & RTL Support',
+                ],
+            ],
+        ];
+    }
+}

@@ -1,0 +1,129 @@
+{% extends "spin-to-win/_layouts/cp" %}
+
+{% set selectedSubnavItem = 'campaigns' %}
+{% set title = 'Campaigns'|t('spin-to-win') %}
+
+{% set allSites = craft.app.sites.getAllSites() %}
+{% set isMultiSite = allSites|length > 1 %}
+{% set currentSiteHandle = craft.app.request.getQueryParam('site') %}
+{% set activeSite = selectedSiteId ? craft.app.sites.getSiteById(selectedSiteId) : (currentSiteHandle ? craft.app.sites.getSiteByHandle(currentSiteHandle) : null) %}
+
+{% block actionButton %}
+    <a href="{{ cpUrl('spin-to-win/campaigns/new', activeSite ? { siteId: activeSite.id } : {}) }}" class="btn submit add icon">
+        {{ activeSite ? ('New Campaign for ' ~ activeSite.name)|t('spin-to-win') : 'New Campaign'|t('spin-to-win') }}
+    </a>
+{% endblock %}
+
+{% block pageContent %}
+    {% if isMultiSite %}
+        <!-- Multi-Site Filter Bar -->
+        <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-size: 13px; font-weight: 600; color: #475569; margin-right: 4px;">{{ "Filter by Site:"|t('spin-to-win') }}</span>
+                <a href="{{ cpUrl('spin-to-win/campaigns') }}" class="btn {{ not activeSite ? 'active' : '' }}" style="{{ not activeSite ? 'background: #0f172a; color: #fff; font-weight: 600;' : '' }}">
+                    {{ "All Sites"|t('spin-to-win') }}
+                </a>
+                {% for s in allSites %}
+                    {% set isSel = activeSite and activeSite.id == s.id %}
+                    <a href="{{ cpUrl('spin-to-win/campaigns', { site: s.handle }) }}" class="btn {{ isSel ? 'active' : '' }}" style="{{ isSel ? 'background: #4f46e5; color: #fff; font-weight: 600;' : '' }}">
+                        {{ s.name }}
+                    </a>
+                {% endfor %}
+            </div>
+
+            {% if not isPlus %}
+                <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 11px; padding: 4px 8px; border-radius: 4px;">
+                    {{ "Lite Edition: Multi-site campaign targeting is unlocked in Plus."|t('spin-to-win') }}
+                </span>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    {% if campaigns|length %}
+        <div class="card" style="background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+            <table class="data fullwidth">
+                <thead>
+                    <tr>
+                        <th>{{ "Name"|t('spin-to-win') }}</th>
+                        <th>{{ "Handle"|t('spin-to-win') }}</th>
+                        {% if isMultiSite %}
+                            <th>{{ "Target Site"|t('spin-to-win') }}</th>
+                        {% endif %}
+                        <th>{{ "Mode"|t('spin-to-win') }}</th>
+                        <th>{{ "Status"|t('spin-to-win') }}</th>
+                        <th>{{ "Schedule"|t('spin-to-win') }}</th>
+                        <th>{{ "Date Created"|t('spin-to-win') }}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for campaign in campaigns %}
+                        <tr>
+                            <td>
+                                <strong><a href="{{ cpUrl('spin-to-win/campaigns/' ~ campaign.id) }}">{{ campaign.name }}</a></strong>
+                                {% if campaign.description %}
+                                    <div style="font-size: 12px; color: #64748b; margin-top: 2px;">{{ campaign.description }}</div>
+                                {% endif %}
+                            </td>
+                            <td><code>{{ campaign.handle }}</code></td>
+                            {% if isMultiSite %}
+                                <td>
+                                    {% if campaign.siteId %}
+                                        {% set targetSite = craft.app.sites.getSiteById(campaign.siteId) %}
+                                        <span class="badge" style="background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">
+                                            {{ targetSite ? targetSite.name : ('Site #' ~ campaign.siteId) }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge" style="background: #f1f5f9; color: #64748b; padding: 2px 8px; border-radius: 4px; font-size: 11px;">
+                                            {{ "All Sites (Global)"|t('spin-to-win') }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+                            <td>
+                                <span class="badge" style="background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 12px;">
+                                    {{ campaign.displayMode|capitalize }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if campaign.enabled %}
+                                    <span class="status green"></span> {{ "Active"|t('spin-to-win') }}
+                                {% else %}
+                                    <span class="status grey"></span> {{ "Paused"|t('spin-to-win') }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if campaign.startDate or campaign.endDate %}
+                                    <div style="font-size: 12px; color: #334155;">
+                                        {{ campaign.startDate ? campaign.startDate|date('short') : 'Anytime' }} → {{ campaign.endDate ? campaign.endDate|date('short') : 'Ongoing' }}
+                                    </div>
+                                {% else %}
+                                    <span style="color: #94a3b8; font-size: 12px;">{{ "Always active"|t('spin-to-win') }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ campaign.dateCreated|datetime('short') }}</td>
+                            <td class="thin">
+                                <a href="{{ cpUrl('spin-to-win/campaigns/' ~ campaign.id) }}" class="btn small">{{ "Edit"|t('app') }}</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="card" style="padding: 48px 24px; text-align: center; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+            <div style="max-width: 440px; margin: 0 auto;">
+                <div style="width: 56px; height: 56px; line-height: 56px; border-radius: 50%; background: #eff6ff; color: #3b82f6; margin: 0 auto 16px; font-size: 24px;">🎡</div>
+                <h3 style="font-size: 18px; font-weight: 600; color: #0f172a; margin: 0 0 8px;">
+                    {{ activeSite ? ('No campaigns configured for ' ~ activeSite.name)|t('spin-to-win') : "No campaigns configured yet"|t('spin-to-win') }}
+                </h3>
+                <p style="font-size: 14px; color: #64748b; margin: 0 0 24px; line-height: 1.5;">
+                    {{ "Create your promotional prize wheel campaign. Configure segment weights, discounts, triggers, and appearance."|t('spin-to-win') }}
+                </p>
+                <a href="{{ cpUrl('spin-to-win/campaigns/new', activeSite ? { siteId: activeSite.id } : {}) }}" class="btn submit big">
+                    {{ activeSite ? ('Create Campaign for ' ~ activeSite.name)|t('spin-to-win') : "Create New Campaign"|t('spin-to-win') }}
+                </a>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

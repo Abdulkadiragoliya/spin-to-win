@@ -1,0 +1,16 @@
+# System & Editor Files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Development & Scratch Scripts
+/scratch/
+test_*.php
+*.log
+
+# Composer & Dependencies
+/vendor/
+composer.lock

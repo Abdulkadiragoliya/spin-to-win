@@ -1,0 +1,41 @@
+{# Settings template for Spin to Win #}
+{% import "_includes/forms" as forms %}
+
+{{ forms.textField({
+    first: true,
+    label: "Sender Name"|t('spin-to-win'),
+    instructions: "Default name used when sending promotional coupon and verification emails."|t('spin-to-win'),
+    id: 'emailSenderName',
+    name: 'emailSenderName',
+    value: settings.emailSenderName,
+    errors: settings.getErrors('emailSenderName')
+}) }}
+
+{{ forms.textField({
+    label: "Sender Email Address"|t('spin-to-win'),
+    instructions: "Default email address used in the From header for notifications."|t('spin-to-win'),
+    id: 'emailSenderAddress',
+    name: 'emailSenderAddress',
+    value: settings.emailSenderAddress,
+    errors: settings.getErrors('emailSenderAddress'),
+    placeholder: "noreply@yourdomain.com"
+}) }}
+
+{{ forms.textField({
+    label: "Reply-To Address"|t('spin-to-win'),
+    instructions: "Optional reply-to email address."|t('spin-to-win'),
+    id: 'emailReplyTo',
+    name: 'emailReplyTo',
+    value: settings.emailReplyTo,
+    errors: settings.getErrors('emailReplyTo')
+}) }}
+
+<hr>
+
+{{ forms.lightswitchField({
+    label: "Track Impressions"|t('spin-to-win'),
+    instructions: "Whether to log anonymous wheel impressions to calculate conversion rates."|t('spin-to-win'),
+    id: 'trackImpressions',
+    name: 'trackImpressions',
+    on: settings.trackImpressions
+}) }}

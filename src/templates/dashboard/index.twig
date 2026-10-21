@@ -1,0 +1,122 @@
+{% extends "spin-to-win/_layouts/cp" %}
+
+{% set selectedSubnavItem = 'dashboard' %}
+{% set title = 'Dashboard'|t('spin-to-win') %}
+
+{% set allSites = craft.app.sites.getAllSites() %}
+{% set isMultiSite = allSites|length > 1 %}
+{% set currentSiteHandle = craft.app.request.getQueryParam('site') %}
+{% set activeSite = selectedSiteId ? craft.app.sites.getSiteById(selectedSiteId) : (currentSiteHandle ? craft.app.sites.getSiteByHandle(currentSiteHandle) : null) %}
+
+{% block actionButton %}
+    <a href="{{ cpUrl('spin-to-win/campaigns/new', activeSite ? { siteId: activeSite.id } : {}) }}" class="btn submit add icon">
+        {{ activeSite ? ('New Campaign for ' ~ activeSite.name)|t('spin-to-win') : 'New Campaign'|t('spin-to-win') }}
+    </a>
+{% endblock %}
+
+{% block pageContent %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 16px 20px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04); flex-wrap: wrap; gap: 12px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #0f172a;">{{ "Spin to Win Promotional Hub"|t('spin-to-win') }}</h2>
+                {% if activeSite %}
+                    <span class="badge" style="background: #e0e7ff; color: #4338ca; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 4px;">{{ activeSite.name }}</span>
+                {% endif %}
+            </div>
+            <p style="margin: 4px 0 0; color: #64748b; font-size: 13px;">
+                {{ activeSite ? ('Showing live metrics and activity for ' ~ activeSite.name)|t('spin-to-win') : 'Engage visitors, capture emails, and distribute real Craft Commerce coupons.'|t('spin-to-win') }}
+            </p>
+        </div>
+        <div>
+            <span style="display: inline-flex; align-items: center; justify-content: center; height: 26px; padding: 0 12px; border-radius: 13px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; background: {{ isPlus ? '#059669' : '#0284c7' }}; color: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
+                {{ isPlus ? 'Plus Edition' : 'Lite Edition' }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Stat Cards Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div class="card" style="padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">{{ "Total Campaigns"|t('spin-to-win') }}</div>
+            <div style="font-size: 28px; font-weight: 700; color: #0f172a; margin-top: 6px;">{{ stats.totalCampaigns }}</div>
+            <div style="font-size: 12px; color: #10b981; margin-top: 4px;">{{ stats.activeCampaigns }} {{ "Active"|t('spin-to-win') }}</div>
+        </div>
+
+        <div class="card" style="padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">{{ "Wheel Impressions"|t('spin-to-win') }}</div>
+            <div style="font-size: 28px; font-weight: 700; color: #0f172a; margin-top: 6px;">{{ stats.totalImpressions }}</div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">{{ "Unique visits triggered"|t('spin-to-win') }}</div>
+        </div>
+
+        <div class="card" style="padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">{{ "Completed Spins"|t('spin-to-win') }}</div>
+            <div style="font-size: 28px; font-weight: 700; color: #0f172a; margin-top: 6px;">{{ stats.totalSpins }}</div>
+            <div style="font-size: 12px; color: #6366f1; margin-top: 4px;">{{ stats.conversionRate }}% {{ "Spin conversion"|t('spin-to-win') }}</div>
+        </div>
+
+        <div class="card" style="padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">{{ "Coupons Issued"|t('spin-to-win') }}</div>
+            <div style="font-size: 28px; font-weight: 700; color: #0f172a; margin-top: 6px;">{{ stats.totalCoupons }}</div>
+            <div style="font-size: 12px; color: #0284c7; margin-top: 4px;">{{ stats.totalWins }} {{ "Winning spins"|t('spin-to-win') }}</div>
+        </div>
+
+        <div class="card" style="padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">{{ "Redemptions"|t('spin-to-win') }}</div>
+            <div style="font-size: 28px; font-weight: 700; color: #0f172a; margin-top: 6px;">{{ stats.redeemedCoupons }}</div>
+            <div style="font-size: 12px; color: #059669; margin-top: 4px;">{{ "Orders completed"|t('spin-to-win') }}</div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card" style="background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+        <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 15px; font-weight: 600; color: #0f172a;">{{ "Recent Spins & Outcomes"|t('spin-to-win') }}</h3>
+            <a href="{{ cpUrl('spin-to-win/reports') }}" style="font-size: 13px; color: #3b82f6; text-decoration: none; font-weight: 500;">{{ "View Full Reports →"|t('spin-to-win') }}</a>
+        </div>
+
+        {% if recentSpins|length %}
+            <table class="data fullwidth">
+                <thead>
+                    <tr>
+                        <th>{{ "Campaign"|t('spin-to-win') }}</th>
+                        <th>{{ "Email Address"|t('spin-to-win') }}</th>
+                        <th>{{ "Reward"|t('spin-to-win') }}</th>
+                        <th>{{ "Coupon Code"|t('spin-to-win') }}</th>
+                        <th>{{ "Outcome"|t('spin-to-win') }}</th>
+                        <th>{{ "Date"|t('spin-to-win') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for spin in recentSpins %}
+                        <tr>
+                            <td>{{ spin.campaignName ?? 'Default Campaign' }}</td>
+                            <td><code>{{ spin.email }}</code></td>
+                            <td>{{ spin.rewardType|title }}</td>
+                            <td>
+                                {% if spin.couponCode %}
+                                    <code style="background: #f1f5f9; padding: 3px 8px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 700; color: #4338ca; border: 1px solid #cbd5e1; display: inline-block; letter-spacing: 0.5px;">{{ spin.couponCode }}</code>
+                                {% else %}
+                                    <span style="color: #94a3b8;">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if spin.isWinner %}
+                                    <span class="status green"></span> {{ "Won"|t('spin-to-win') }}
+                                {% else %}
+                                    <span class="status grey"></span> {{ "No Prize"|t('spin-to-win') }}
+                                {% endif %}
+                            </td>
+                            <td>{{ spin.dateCreated|datetime('short') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div style="padding: 48px 24px; text-align: center; color: #64748b;">
+                <p style="font-size: 15px; margin: 0 0 12px; font-weight: 500;">{{ "No spins recorded yet."|t('spin-to-win') }}</p>
+                <p style="font-size: 13px; margin: 0 0 20px; color: #94a3b8;">{{ "Create your first promotional wheel campaign and publish it on your storefront to start collecting spins!"|t('spin-to-win') }}</p>
+                <a href="{{ cpUrl('spin-to-win/campaigns/new') }}" class="btn submit">{{ 'Create Campaign'|t('spin-to-win') }}</a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
