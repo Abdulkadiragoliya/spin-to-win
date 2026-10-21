@@ -25,7 +25,8 @@ class ReportsController extends BaseCpController
      */
     public function actionIndex(): Response
     {
-        $isPlus = SpinToWin::getInstance()->editions->isPlus();
+        $isPro = SpinToWin::getInstance()->editions->isPro();
+        $isPlus = $isPro;
         $reportsService = SpinToWin::getInstance()->reports;
 
         $request = Craft::$app->getRequest();
@@ -34,7 +35,7 @@ class ReportsController extends BaseCpController
 
         $siteParam = ($request instanceof \craft\web\Request) ? ($request->getQueryParam('site') ?? $request->getQueryParam('siteId')) : null;
         $siteId = null;
-        if ($isPlus && $siteParam !== null && $siteParam !== '') {
+        if ($isPro && $siteParam !== null && $siteParam !== '') {
             if (is_numeric($siteParam)) {
                 $siteId = (int)$siteParam;
             } else {
@@ -63,6 +64,7 @@ class ReportsController extends BaseCpController
         return $this->renderTemplate('spin-to-win/reports/index', [
             'title' => Craft::t('spin-to-win', 'Reports & Analytics'),
             'selectedSubnavItem' => 'reports',
+            'isPro' => $isPro,
             'isPlus' => $isPlus,
             'campaignId' => $campaignId,
             'selectedSiteId' => $siteId,
@@ -84,9 +86,9 @@ class ReportsController extends BaseCpController
     {
         $editions = SpinToWin::getInstance()->editions;
 
-        if (!$editions->isPlus()) {
+        if (!$editions->isPro()) {
             Craft::$app->getSession()->setError(
-                Craft::t('spin-to-win', 'CSV Export is an exclusive feature of the Plus edition. Please upgrade your license to unlock full reporting exports.')
+                Craft::t('spin-to-win', 'CSV Export is an exclusive feature of the Pro edition. Please upgrade your license to unlock full reporting exports.')
             );
             return $this->redirect('spin-to-win/reports');
         }

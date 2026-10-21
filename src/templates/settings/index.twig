@@ -13,7 +13,8 @@
 {% endblock %}
 
 {% block pageContent %}
-    {% if isMultiSite and isPlus %}
+    {% set isProEdition = isPro ?? isPlus ?? false %}
+    {% if isMultiSite and isProEdition %}
         <!-- Dedicated Multi-Site Switcher Bar -->
         <div style="background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%); border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
             <div style="display: flex; align-items: center; gap: 12px;">

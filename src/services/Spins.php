@@ -256,7 +256,7 @@ class Spins extends Component
                     ->insert('{{%spintowin_coupons}}', $couponValues)
                     ->execute();
 
-                // Dispatch winner notification email (Plus Edition feature)
+                // Dispatch winner notification email (Pro Edition feature)
                 SpinToWin::getInstance()->emails->sendWinnerNotification(
                     $campaign,
                     $winningSegment,

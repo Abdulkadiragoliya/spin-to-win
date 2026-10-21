@@ -6,7 +6,7 @@
 [![Craft Commerce](https://img.shields.io/badge/Craft%20Commerce-4.x%20%7C%205.x-38B2AC.svg?style=flat-square)](https://craftcms.com/commerce)
 [![PHP](https://img.shields.io/badge/PHP-8.0.2%2B-777BB4.svg?style=flat-square)](https://php.net/)
 [![License](https://img.shields.io/badge/License-Craft%20License-blue.svg?style=flat-square)](https://plugins.craftcms.com/)
-[![Editions](https://img.shields.io/badge/Editions-Lite%20%7C%20Plus-4F46E5.svg?style=flat-square)](https://plugins.craftcms.com/)
+[![Editions](https://img.shields.io/badge/Editions-Lite%20%7C%20Pro-4F46E5.svg?style=flat-square)](https://plugins.craftcms.com/)
 
 ---
 
@@ -16,7 +16,7 @@
 - [Editions & Feature Matrix](#editions--feature-matrix)
 - [Requirements](#requirements)
 - [Installation](#installation)
-- [Multi-Site Architecture (Plus Edition)](#multi-site-architecture-plus-edition)
+- [Multi-Site Architecture (Pro Edition)](#multi-site-architecture-pro-edition)
 - [Probability Spin Pool Engine](#probability-spin-pool-engine)
 - [Frontend Quick Start & Twig Guide](#frontend-quick-start--twig-guide)
   - [1. Automatic Placement](#1-automatic-placement)
@@ -52,11 +52,11 @@
 
 - **100% Server-Authoritative Cryptographic RNG**: Outcome slices and coupon values are calculated and verified strictly on the server using PHP `random_int()`—never manipulable from client browser tools.
 - **Craft Commerce Deep Integration**: Automatically creates authentic Craft Commerce discount coupon codes and provides one-click cart application.
-- **Multi-Site Support (Plus Edition)**: Run campaigns globally across all storefronts or isolate wheels to specific sites with dedicated per-site settings, reporting, and dropdown scoping.
+- **Multi-Site Support (Pro Edition)**: Run campaigns globally across all storefronts or isolate wheels to specific sites with dedicated per-site settings, reporting, and dropdown scoping.
 - **Smart Probability Pool System**: Choose between depleting capped prize pools (guaranteed win quotas per cycle) or independent probabilistic percentages.
 - **Multiple Display Modes**: Centered modal popup or slide-in drawers (**Left**, **Right**, or **Top**) with responsive styling optimized for mobile phones (iPhone SE, iPhone 16, Pixel 9/Pro), tablets, and high-res desktops.
 - **Flexible Triggers**: Display immediately on page load, after time delay, on scroll percentage depth, on exit-intent, after user inactivity, or via custom storefront trigger buttons.
-- **Double Opt-In Email Verification (Plus Edition)**: Prevent fake or mistyped emails by issuing secure verification tokens before coupons unlock.
+- **Double Opt-In Email Verification (Pro Edition)**: Prevent fake or mistyped emails by issuing secure verification tokens before coupons unlock.
 - **CSV Data Export & Analytics**: Monitor a 5-stage conversion funnel and export spin logs and customer emails with one click.
 
 ---
@@ -65,7 +65,7 @@
 
 Spin to Win is available in two commercial editions through the **Craft Plugin Store**:
 
-| Feature | 🟢 Lite Edition ($69) | 💎 Plus Edition ($99) |
+| Feature | 🟢 Lite Edition ($69) | 💎 Pro Edition ($99) |
 | :--- | :---: | :---: |
 | **Price** | **$69** *(renews at $29/yr)* | **$99** *(renews at $39/yr)* |
 | **Interactive Live SVG Wheel Builder** | ✅ | ✅ |
@@ -88,7 +88,7 @@ Spin to Win is available in two commercial editions through the **Craft Plugin S
 | **Safe CSV Data Export (Spins & Coupons)** | ❌ | ✅ |
 
 > **Commercial Licensing**:
-> On production domains, plugin editions are enforced and verified by the official Craft Plugin Store. To run the Plus edition on production, purchase a Plus license ($99) in the Craft Control Panel under **Plugin Store** or **Settings → Plugins**.
+> On production domains, plugin editions are enforced and verified by the official Craft Plugin Store. To run the Pro edition on production, purchase a Pro license ($99) in the Craft Control Panel under **Plugin Store** or **Settings → Plugins**.
 > *(For testing locally on `.test`, `.local`, or `localhost`, you can test either edition freely without a commercial license key).*
 
 ---
@@ -108,7 +108,7 @@ Spin to Win is available in two commercial editions through the **Craft Plugin S
 
 1. In your Craft Control Panel, navigate to **Plugin Store**.
 2. Search for **Spin to Win**.
-3. Choose your desired edition (**Lite** for $69 or **Plus** for $99) and click **Try** or **Buy**.
+3. Choose your desired edition (**Lite** for $69 or **Pro** for $99) and click **Try** or **Buy**.
 
 ### Via Composer
 
@@ -119,9 +119,9 @@ php craft plugin/install spin-to-win
 
 ---
 
-## Multi-Site Architecture (Plus Edition)
+## Multi-Site Architecture (Pro Edition)
 
-In multi-site Craft installations, Spin to Win Plus provides native, comprehensive site isolation:
+In multi-site Craft installations, Spin to Win Pro provides native, comprehensive site isolation:
 
 ### 1. Global vs Site-Specific Campaigns
 When creating a campaign, the **Target Site** selector allows you to:
@@ -278,8 +278,8 @@ Access campaign data, plugin edition status, and settings directly in your templ
 
 ```twig
 {# Check current edition #}
-{% set edition = craft.spinToWin.getEdition() %} {# 'lite' or 'plus' #}
-{% set isPlus = craft.spinToWin.isPlus() %}
+{% set edition = craft.spinToWin.getEdition() %} {# 'lite' or 'pro' #}
+{% set isPro = craft.spinToWin.isPro() %}
 
 {# Fetch active campaigns for current site #}
 {% set activeCampaigns = craft.spinToWin.getActiveCampaigns() %}
@@ -313,10 +313,10 @@ Manage campaigns under **CP → Spin to Win → Campaigns**. The Campaign Builde
 | **Campaign Handle** | `handle` | Text | Unique identifier used in Twig `{{ craft.spinToWin.render('handle') }}`. |
 | **Description** | `description` | Textarea | Optional internal notes for marketing staff. |
 | **Enable Campaign** | `enabled` | Lightswitch | Toggle campaign active / inactive. |
-| **Target Site** | `siteId` | Select *(Plus)* | Choose **All Sites (Global)** or restrict to a specific site in your multi-site setup. |
+| **Target Site** | `siteId` | Select *(Pro)* | Choose **All Sites (Global)** or restrict to a specific site in your multi-site setup. |
 | **Display Mode** | `displayMode` | Select | Choose **Modal Popup** (centered responsive card) or **Slide-in Sidebar** (drawer). |
 | **Sidebar Position** | `sidebarPosition` | Select | Choose drawer origin: **Left**, **Right**, or **Top** (full-width top slide down). |
-| **Trigger Type** | `triggerType` | Select | When to display: <br>• **Page Load**: Immediately on page load.<br>• **Time Delay**: After X seconds.<br>• **Scroll Depth** *(Plus)*: After scrolling X% down.<br>• **Exit Intent** *(Plus)*: When visitor moves cursor toward browser window close.<br>• **User Inactivity** *(Plus)*: After visitor is idle for X seconds.<br>• **Manual Only**: Only when clicking a `data-stw-trigger` button. |
+| **Trigger Type** | `triggerType` | Select | When to display: <br>• **Page Load**: Immediately on page load.<br>• **Time Delay**: After X seconds.<br>• **Scroll Depth** *(Pro)*: After scrolling X% down.<br>• **Exit Intent** *(Pro)*: When visitor moves cursor toward browser window close.<br>• **User Inactivity** *(Pro)*: After visitor is idle for X seconds.<br>• **Manual Only**: Only when clicking a `data-stw-trigger` button. |
 | **Trigger Delay** | `triggerDelay` | Number | Delay in seconds for time trigger. |
 | **Scroll Threshold** | `scrollThreshold`| Number | Scroll percentage (1–100%) for scroll depth trigger. |
 
@@ -333,7 +333,7 @@ Manage campaigns under **CP → Spin to Win → Campaigns**. The Campaign Builde
 | **Require Name** | `requireName` | Lightswitch | Ask for customer's first name. |
 | **Require Consent** | `requireConsent`| Lightswitch | GDPR/privacy policy consent checkbox. |
 | **Consent Text** | `consentText` | Textarea | Privacy policy disclosure text with HTML links. |
-| **Require Verification** | `requireVerification` | Lightswitch *(Plus)* | Issue double opt-in email verification token before coupon unlocks. |
+| **Require Verification** | `requireVerification` | Lightswitch *(Pro)* | Issue double opt-in email verification token before coupon unlocks. |
 | **Result Title** | `resultTitle` | Text | Headline displayed on winning spin (e.g., *"Congratulations!"*). |
 | **Result Text** | `resultText` | Textarea | Next-step instructions, coupon code, and discount details. |
 
@@ -366,8 +366,8 @@ Add, delete, reorder, and configure wheel segments with live interactive preview
   - `no_prize`: A "Try Again" / non-winning slice.
   - `custom`: Custom reward text (e.g., "Free Gift with Order").
 - **Discount Amount**: Numeric value for percentage or fixed discount.
-- **Min Order Value**: Minimum cart subtotal required to use coupon *(Plus)*.
-- **Coupon Duration (Days)**: Coupon validity period before expiring *(Plus)*.
+- **Min Order Value**: Minimum cart subtotal required to use coupon *(Pro)*.
+- **Coupon Duration (Days)**: Coupon validity period before expiring *(Pro)*.
 - **Allocated Count**: Number of times this prize can be won within the pool cycle.
 - **Calculated Probability %**: Automatically computes exact odds based on your Pool Size.
 - **Enabled**: Toggle individual slices on/off without deleting them.
@@ -379,8 +379,8 @@ Add, delete, reorder, and configure wheel segments with live interactive preview
 | Field | Handle | Type | Description |
 | :--- | :--- | :--- | :--- |
 | **Spin Limit Policy** | `spinLimitPolicy` | Select | • **Once per 24 Hours** (daily limit)<br>• **Once per Lifetime** (single spin forever)<br>• **Unlimited (Testing Only)** |
-| **Start Date & Time** | `startDate` | DateTime *(Plus)* | Date/time when campaign automatically begins displaying. |
-| **End Date & Time** | `endDate` | DateTime *(Plus)* | Date/time when campaign automatically stops displaying. |
+| **Start Date & Time** | `startDate` | DateTime *(Pro)* | Date/time when campaign automatically begins displaying. |
+| **End Date & Time** | `endDate` | DateTime *(Pro)* | Date/time when campaign automatically stops displaying. |
 
 ---
 
@@ -394,7 +394,7 @@ Spin to Win integrates natively with **Craft Commerce**:
 
 ---
 
-## Automated Winner Email Delivery (Plus Edition)
+## Automated Winner Email Delivery (Pro Edition)
 
 Ensure customers never lose their discount code:
 - Automatically delivers a branded transactional email to the winning customer.
@@ -425,7 +425,7 @@ Monitor your campaign conversion funnel under **CP → Spin to Win → Reports**
 ### 3. Filterable Reports
 Filter all metrics, funnels, charts, and tables by **Campaign** and **Site Scope**.
 
-### 4. CSV Data Export Streaming (Plus Edition)
+### 4. CSV Data Export Streaming (Pro Edition)
 - **Export Spins CSV**: Full spin attempts with Spin ID, Campaign, Email, Customer Name, Outcome, Reward Type, Coupon Code, IP Address, Verification Status, and Timestamp.
 - **Export Coupons CSV**: Coupon ID, Campaign, Code, Discount Type, Discount Amount, Min Order Value, Expiry Date, Redemption Status, Order ID, and Redeemed At.
 
@@ -487,12 +487,12 @@ For headless frontends (Next.js, Nuxt, Astro, Vue, React, Gatsby), Spin to Win p
 
 ## Local Development & License Testing
 
-### Testing Plus Edition Locally
+### Testing Pro Edition Locally
 In local development environments (`*.test`, `*.local`, `localhost`), Craft CMS allows testing commercial plugin editions without requiring a paid license key:
 
-To test the **Plus Edition** locally:
+To test the **Pro Edition** locally:
 ```bash
-php craft project-config/set plugins.spin-to-win.edition plus --update-timestamp
+php craft project-config/set plugins.spin-to-win.edition pro --update-timestamp
 ```
 To switch back to **Lite Edition**:
 ```bash

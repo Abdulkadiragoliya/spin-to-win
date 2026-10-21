@@ -11,14 +11,15 @@
         </div>
     </div>
     <div class="input">
-        <span style="display: inline-flex; align-items: center; justify-content: center; height: 26px; padding: 0 12px; border-radius: 13px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; background: {{ isPlus ? '#059669' : '#0284c7' }}; color: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
-            {{ isPlus ? 'Plus Edition' : 'Lite Edition' }}
+        {% set isProEdition = isPro ?? isPlus ?? false %}
+        <span style="display: inline-flex; align-items: center; justify-content: center; height: 26px; padding: 0 12px; border-radius: 13px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; background: {{ isProEdition ? '#059669' : '#0284c7' }}; color: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
+            {{ isProEdition ? 'Pro Edition' : 'Lite Edition' }}
         </span>
         <span style="margin-left: 10px; color: #64748b; font-size: 13px;">
-            {% if isPlus %}
+            {% if isProEdition %}
                 {{ "All advanced marketing features, scheduling, and multi-site targeting unlocked."|t('spin-to-win') }}
             {% else %}
-                {{ "Core features active. Upgrade to Plus for multi-site targeting, scheduling, and automated winner emails."|t('spin-to-win') }}
+                {{ "Core features active. Upgrade to Pro for multi-site targeting, scheduling, and automated winner emails."|t('spin-to-win') }}
             {% endif %}
         </span>
     </div>

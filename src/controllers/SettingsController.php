@@ -26,11 +26,12 @@ class SettingsController extends BaseCpController
     public function actionIndex(): Response
     {
         $plugin = SpinToWin::getInstance();
-        $isPlus = $plugin->editions->isPlus();
+        $isPro = $plugin->editions->isPro();
+        $isPlus = $isPro;
 
         $siteParam = Craft::$app->getRequest()->getQueryParam('site') ?? Craft::$app->getRequest()->getQueryParam('siteId');
         $activeSite = null;
-        if ($isPlus && $siteParam !== null && $siteParam !== '') {
+        if ($isPro && $siteParam !== null && $siteParam !== '') {
             if (is_numeric($siteParam)) {
                 $activeSite = Craft::$app->getSites()->getSiteById((int)$siteParam);
             } else {
@@ -55,6 +56,7 @@ class SettingsController extends BaseCpController
             'activeSite' => $activeSite,
             'selectedSiteId' => $activeSite->id,
             'edition' => $plugin->getEdition(),
+            'isPro' => $isPro,
             'isPlus' => $isPlus,
             'featureMatrix' => $plugin->editions->getFeatureMatrix(),
         ]);

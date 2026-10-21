@@ -3,15 +3,17 @@
 {% set selectedSubnavItem = 'reports' %}
 {% set title = 'Reports & Analytics'|t('spin-to-win') %}
 
+{% set isProEdition = isPro ?? isPlus ?? false %}
+
 {% block actionButton %}
-    {% if isPlus %}
+    {% if isProEdition %}
         <div style="display: flex; gap: 8px;">
             <a href="{{ cpUrl('spin-to-win/reports/export', { type: 'spins', campaignId: campaignId, site: craft.app.request.getQueryParam('site'), siteId: selectedSiteId }) }}" class="btn download icon">{{ 'Export Spins CSV'|t('spin-to-win') }}</a>
             <a href="{{ cpUrl('spin-to-win/reports/export', { type: 'coupons', campaignId: campaignId, site: craft.app.request.getQueryParam('site'), siteId: selectedSiteId }) }}" class="btn download icon">{{ 'Export Coupons CSV'|t('spin-to-win') }}</a>
         </div>
     {% else %}
         <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="badge" style="background: #e2e8f0; color: #64748b; font-size: 12px; padding: 6px 12px; border-radius: 6px;">{{ "CSV Export (Plus Only)"|t('spin-to-win') }}</span>
+            <span class="badge" style="background: #e2e8f0; color: #64748b; font-size: 12px; padding: 6px 12px; border-radius: 6px;">{{ "CSV Export (Pro Only)"|t('spin-to-win') }}</span>
         </div>
     {% endif %}
 {% endblock %}
@@ -39,13 +41,13 @@
         </form>
 
         <div style="font-size: 12px; color: #64748b;">
-            {% if isPlus %}
+            {% if isProEdition %}
                 <span style="display: inline-flex; align-items: center; gap: 4px; color: #059669; font-weight: 600;">
                     <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
-                    {{ "Plus Edition Active - Full Reports & Export Unlocked"|t('spin-to-win') }}
+                    {{ "Pro Edition Active - Full Reports & Export Unlocked"|t('spin-to-win') }}
                 </span>
             {% else %}
-                <span style="color: #64748b;">{{ "Lite Edition - Upgrade to Plus for CSV exports & automated webhooks"|t('spin-to-win') }}</span>
+                <span style="color: #64748b;">{{ "Lite Edition - Upgrade to Pro for CSV exports & automated webhooks"|t('spin-to-win') }}</span>
             {% endif %}
         </div>
     </div>

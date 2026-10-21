@@ -751,7 +751,8 @@
 
                         {% set allSites = craft.app.sites.getAllSites() %}
                         {% if allSites|length > 1 %}
-                            {% if isPlus %}
+                            {% set isProEdition = isPro ?? isPlus ?? false %}
+                            {% if isProEdition %}
                                 {% set siteOptions = [{ label: "All Sites (Global)"|t('spin-to-win'), value: '' }] %}
                                 {% for s in allSites %}
                                     {% set siteOptions = siteOptions|merge([{ label: s.name ~ ' (' ~ s.handle ~ ')', value: s.id }]) %}
@@ -768,9 +769,9 @@
                                 <div class="field">
                                     <div class="heading">
                                         <label>{{ "Target Site"|t('spin-to-win') }}</label>
-                                        <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">{{ "Plus Edition"|t('spin-to-win') }}</span>
+                                        <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">{{ "Pro Edition"|t('spin-to-win') }}</span>
                                         <div class="instructions">
-                                            <p>{{ "Multi-site targeting is a Plus feature. In Lite Edition, campaigns run on the primary site."|t('spin-to-win') }}</p>
+                                            <p>{{ "Multi-site targeting is a Pro feature. In Lite Edition, campaigns run on the primary site."|t('spin-to-win') }}</p>
                                         </div>
                                     </div>
                                     <div class="input">
@@ -959,18 +960,19 @@
                         }) }}
                     </div>
 
-                    <!-- Scheduling (Plus Edition) -->
+                    <!-- Scheduling (Pro Edition) -->
                     <div class="card" style="padding: 24px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                        {% set isProSched = isPro ?? isPlus ?? false %}
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                             <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #0f172a;">
                                 {{ "Campaign Scheduling"|t('spin-to-win') }}
                             </h3>
-                            {% if not isPlus %}
-                                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 4px;">{{ "Plus Edition"|t('spin-to-win') }}</span>
+                            {% if not isProSched %}
+                                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 4px;">{{ "Pro Edition"|t('spin-to-win') }}</span>
                             {% endif %}
                         </div>
 
-                        {% if isPlus %}
+                        {% if isProSched %}
                             {{ forms.dateTimeField({
                                 label: "Start Date & Time"|t('spin-to-win'),
                                 instructions: "When the campaign becomes visible."|t('spin-to-win'),
@@ -988,7 +990,7 @@
                             }) }}
                         {% else %}
                             <p style="font-size: 13px; color: #64748b; margin: 0; line-height: 1.5;">
-                                {{ "Start and end scheduling is available in the Plus edition. Lite campaigns remain active whenever the Enabled switch is ON."|t('spin-to-win') }}
+                                {{ "Start and end scheduling is available in the Pro edition. Lite campaigns remain active whenever the Enabled switch is ON."|t('spin-to-win') }}
                             </p>
                         {% endif %}
                     </div>

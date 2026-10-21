@@ -9,7 +9,7 @@ use yii\web\ForbiddenHttpException;
 /**
  * Edition & Feature Gatekeeper Service
  *
- * Handles Lite and Plus edition verification and server-side feature access control.
+ * Handles Lite and Pro edition verification and server-side feature access control.
  *
  * @author Abdulkadir Agoliya
  * @since 1.0.0
@@ -30,15 +30,15 @@ class Editions extends Component
      * @var array Feature definitions mapped to required minimum edition
      */
     protected static array $featureMap = [
-        self::FEATURE_SCHEDULING => SpinToWin::EDITION_PLUS,
-        self::FEATURE_ADVANCED_TRIGGERS => SpinToWin::EDITION_PLUS,
-        self::FEATURE_ADVANCED_RESTRICTIONS => SpinToWin::EDITION_PLUS,
-        self::FEATURE_EMAIL_DELIVERY => SpinToWin::EDITION_PLUS,
-        self::FEATURE_EMAIL_VERIFICATION => SpinToWin::EDITION_PLUS,
-        self::FEATURE_ADVANCED_REPORTS => SpinToWin::EDITION_PLUS,
-        self::FEATURE_CSV_EXPORT => SpinToWin::EDITION_PLUS,
-        self::FEATURE_MULTISITE => SpinToWin::EDITION_PLUS,
-        self::FEATURE_ADVANCED_STYLING => SpinToWin::EDITION_PLUS,
+        self::FEATURE_SCHEDULING => SpinToWin::EDITION_PRO,
+        self::FEATURE_ADVANCED_TRIGGERS => SpinToWin::EDITION_PRO,
+        self::FEATURE_ADVANCED_RESTRICTIONS => SpinToWin::EDITION_PRO,
+        self::FEATURE_EMAIL_DELIVERY => SpinToWin::EDITION_PRO,
+        self::FEATURE_EMAIL_VERIFICATION => SpinToWin::EDITION_PRO,
+        self::FEATURE_ADVANCED_REPORTS => SpinToWin::EDITION_PRO,
+        self::FEATURE_CSV_EXPORT => SpinToWin::EDITION_PRO,
+        self::FEATURE_MULTISITE => SpinToWin::EDITION_PRO,
+        self::FEATURE_ADVANCED_STYLING => SpinToWin::EDITION_PRO,
     ];
 
     /**
@@ -52,13 +52,27 @@ class Editions extends Component
     }
 
     /**
-     * Check if the current edition is Plus (or higher)
+     * Check if the current edition is Pro (or higher)
+     *
+     * @return bool
+     */
+    public function isPro(): bool
+    {
+        $edition = $this->getEdition();
+        if ($edition === 'pro' || $edition === 'plus') {
+            return true;
+        }
+        return SpinToWin::getInstance()->is(SpinToWin::EDITION_PRO, '>=');
+    }
+
+    /**
+     * Alias for backwards compatibility
      *
      * @return bool
      */
     public function isPlus(): bool
     {
-        return SpinToWin::getInstance()->is(SpinToWin::EDITION_PLUS, '>=');
+        return $this->isPro();
     }
 
     /**
@@ -89,28 +103,39 @@ class Editions extends Component
         if (!$this->hasFeature($feature)) {
             $msg = $message ?? Craft::t(
                 'spin-to-win',
-                'This feature requires the Spin to Win Plus edition.'
+                'This feature requires the Spin to Win Pro edition.'
             );
             throw new ForbiddenHttpException($msg);
         }
     }
 
     /**
-     * Convenience method to require Plus edition
+     * Convenience method to require Pro edition
+     *
+     * @param string|null $featureName
+     * @throws ForbiddenHttpException
+     */
+    public function requirePro(?string $featureName = null): void
+    {
+        if (!$this->isPro()) {
+            $suffix = $featureName ? " ($featureName)" : '';
+            throw new ForbiddenHttpException(
+                Craft::t('spin-to-win', 'This action requires the Spin to Win Pro edition{suffix}.', [
+                    'suffix' => $suffix,
+                ])
+            );
+        }
+    }
+
+    /**
+     * Alias for backwards compatibility
      *
      * @param string|null $featureName
      * @throws ForbiddenHttpException
      */
     public function requirePlus(?string $featureName = null): void
     {
-        if (!$this->isPlus()) {
-            $suffix = $featureName ? " ($featureName)" : '';
-            throw new ForbiddenHttpException(
-                Craft::t('spin-to-win', 'This action requires the Spin to Win Plus edition{suffix}.', [
-                    'suffix' => $suffix,
-                ])
-            );
-        }
+        $this->requirePro($featureName);
     }
 
     /**
@@ -136,8 +161,8 @@ class Editions extends Component
                     'Standard Welcome & Result Screens',
                 ],
             ],
-            'plus' => [
-                'name' => 'Plus',
+            'pro' => [
+                'name' => 'Pro',
                 'description' => 'Advanced marketing, automation, deep analytics, and multi-site management.',
                 'features' => [
                     'All Lite Features',

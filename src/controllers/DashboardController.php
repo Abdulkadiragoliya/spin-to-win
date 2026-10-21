@@ -24,12 +24,13 @@ class DashboardController extends BaseCpController
     public function actionIndex(): Response
     {
         $plugin = SpinToWin::getInstance();
-        $isPlus = $plugin->editions->isPlus();
+        $isPro = $plugin->editions->isPro();
+        $isPlus = $isPro;
         $request = Craft::$app->getRequest();
 
         $siteParam = $request->getQueryParam('site') ?? $request->getQueryParam('siteId');
         $siteId = null;
-        if ($isPlus && $siteParam !== null && $siteParam !== '') {
+        if ($isPro && $siteParam !== null && $siteParam !== '') {
             if (is_numeric($siteParam)) {
                 $siteId = (int)$siteParam;
             } else {
@@ -86,6 +87,7 @@ class DashboardController extends BaseCpController
             'title' => Craft::t('spin-to-win', 'Spin to Win Dashboard'),
             'selectedSubnavItem' => 'dashboard',
             'edition' => $plugin->getEdition(),
+            'isPro' => $isPro,
             'isPlus' => $isPlus,
             'selectedSiteId' => $siteId,
             'stats' => [

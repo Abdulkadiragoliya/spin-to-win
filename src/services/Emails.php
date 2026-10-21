@@ -54,10 +54,10 @@ class Emails extends Component
         ?string $expiresAtFormatted = null,
         ?string $recipientName = null
     ): bool {
-        // Feature check: Automated email notifications is a Plus Edition feature
+        // Feature check: Automated email notifications is a Pro Edition feature
         $plugin = SpinToWin::getInstance();
         if (!$plugin->editions->hasFeature(Editions::FEATURE_EMAIL_DELIVERY)) {
-            Craft::info("Automated email notification skipped: requires Plus Edition.", __METHOD__);
+            Craft::info("Automated email notification skipped: requires Pro Edition.", __METHOD__);
             return false;
         }
 

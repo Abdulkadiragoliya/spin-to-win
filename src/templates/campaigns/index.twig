@@ -15,27 +15,45 @@
 {% endblock %}
 
 {% block pageContent %}
+    {% set isProEdition = isPro ?? isPlus ?? false %}
     {% if isMultiSite %}
         <!-- Multi-Site Filter Bar -->
-        <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <span style="font-size: 13px; font-weight: 600; color: #475569; margin-right: 4px;">{{ "Filter by Site:"|t('spin-to-win') }}</span>
-                <a href="{{ cpUrl('spin-to-win/campaigns') }}" class="btn {{ not activeSite ? 'active' : '' }}" style="{{ not activeSite ? 'background: #0f172a; color: #fff; font-weight: 600;' : '' }}">
-                    {{ "All Sites"|t('spin-to-win') }}
-                </a>
-                {% for s in allSites %}
-                    {% set isSel = activeSite and activeSite.id == s.id %}
-                    <a href="{{ cpUrl('spin-to-win/campaigns', { site: s.handle }) }}" class="btn {{ isSel ? 'active' : '' }}" style="{{ isSel ? 'background: #4f46e5; color: #fff; font-weight: 600;' : '' }}">
-                        {{ s.name }}
+        <div class="card" style="margin-bottom: 20px; padding: 12px 18px; background: #ffffff; border-radius: 10px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; display: inline-flex; align-items: center; gap: 6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    {{ "Storefront:"|t('spin-to-win') }}
+                </span>
+                <div style="display: inline-flex; align-items: center; background: #f1f5f9; padding: 3px; border-radius: 9999px; border: 1px solid #e2e8f0; gap: 2px;">
+                    <a href="{{ cpUrl('spin-to-win/campaigns') }}" 
+                       style="display: inline-flex; align-items: center; gap: 5px; padding: 5px 14px; border-radius: 9999px; font-size: 12px; font-weight: {{ not activeSite ? '700' : '500' }}; text-decoration: none; transition: all 0.15s ease; {{ not activeSite ? 'background: #0f172a; color: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.1);' : 'color: #475569;' }}">
+                        <span>🌐</span>
+                        <span>{{ "All Sites"|t('spin-to-win') }}</span>
                     </a>
-                {% endfor %}
+                    {% for s in allSites %}
+                        {% set isSel = activeSite and activeSite.id == s.id %}
+                        <a href="{{ cpUrl('spin-to-win/campaigns', { site: s.handle }) }}" 
+                           style="display: inline-flex; align-items: center; gap: 5px; padding: 5px 14px; border-radius: 9999px; font-size: 12px; font-weight: {{ isSel ? '700' : '500' }}; text-decoration: none; transition: all 0.15s ease; {{ isSel ? 'background: #4f46e5; color: #ffffff; box-shadow: 0 1px 3px rgba(79,70,229,0.3);' : 'color: #475569;' }}">
+                            <span>🏬</span>
+                            <span>{{ s.name }}</span>
+                        </a>
+                    {% endfor %}
+                </div>
             </div>
 
-            {% if not isPlus %}
-                <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 11px; padding: 4px 8px; border-radius: 4px;">
-                    {{ "Lite Edition: Multi-site campaign targeting is unlocked in Plus."|t('spin-to-win') }}
-                </span>
-            {% endif %}
+            <div>
+                {% if isProEdition %}
+                    <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 9999px;">
+                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981;"></span>
+                        {{ "Pro Multi-Site Active"|t('spin-to-win') }}
+                    </span>
+                {% else %}
+                    <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; padding: 4px 12px; border-radius: 9999px;">
+                        <span>🔒</span>
+                        <span>{{ "Lite Edition: Multi-site targeting unlocked in Pro"|t('spin-to-win') }}</span>
+                    </span>
+                {% endif %}
+            </div>
         </div>
     {% endif %}
 

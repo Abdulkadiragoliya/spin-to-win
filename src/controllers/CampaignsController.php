@@ -25,10 +25,11 @@ class CampaignsController extends BaseCpController
     public function actionIndex(): Response
     {
         $request = Craft::$app->getRequest();
-        $isPlus = SpinToWin::getInstance()->editions->isPlus();
+        $isPro = SpinToWin::getInstance()->editions->isPro();
+        $isPlus = $isPro;
 
         $selectedSiteId = null;
-        if ($isPlus) {
+        if ($isPro) {
             $siteParam = $request->getQueryParam('site') ?? $request->getQueryParam('siteId');
             if ($siteParam !== null && $siteParam !== '') {
                 if (is_numeric($siteParam)) {
@@ -46,7 +47,8 @@ class CampaignsController extends BaseCpController
             'title' => Craft::t('spin-to-win', 'Campaigns'),
             'selectedSubnavItem' => 'campaigns',
             'campaigns' => $campaigns,
-            'isPlus' => $isPlus,
+            'isPro' => $isPro,
+            'isPlus' => $isPro,
             'selectedSiteId' => $selectedSiteId,
         ]);
     }
@@ -62,7 +64,8 @@ class CampaignsController extends BaseCpController
     public function actionEdit(?int $id = null, ?Campaign $campaign = null): Response
     {
         $plugin = SpinToWin::getInstance();
-        $isPlus = $plugin->editions->isPlus();
+        $isPro = $plugin->editions->isPro();
+        $isPlus = $isPro;
 
         if ($campaign === null) {
             if ($id !== null) {
@@ -72,7 +75,7 @@ class CampaignsController extends BaseCpController
                 }
             } else {
                 $campaign = new Campaign();
-                if ($isPlus) {
+                if ($isPro) {
                     $siteParam = Craft::$app->getRequest()->getQueryParam('site') ?? Craft::$app->getRequest()->getQueryParam('siteId');
                     if ($siteParam !== null && $siteParam !== '') {
                         if (is_numeric($siteParam)) {
@@ -108,6 +111,7 @@ class CampaignsController extends BaseCpController
             'wheelSettings' => $campaign->getParsedWheelSettings(),
             'poolAllocationStatus' => $poolAllocationStatus,
             'isNew' => !$campaign->id,
+            'isPro' => $isPro,
             'isPlus' => $isPlus,
             'crumbs' => [
                 [
@@ -179,8 +183,8 @@ class CampaignsController extends BaseCpController
             $campaign->wheelSettings = $wheelSettings;
         }
 
-        // Scheduling (Plus edition only)
-        if ($plugin->editions->isPlus()) {
+        // Scheduling (Pro edition only)
+        if ($plugin->editions->isPro()) {
             $campaign->startDate = $request->getBodyParam('startDate');
             $campaign->endDate = $request->getBodyParam('endDate');
         }

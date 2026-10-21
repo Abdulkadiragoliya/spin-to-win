@@ -39,7 +39,8 @@ use abdulkadiragoliya\spintowin\services\Editions;
 class SpinToWin extends Plugin
 {
     public const EDITION_LITE = 'lite';
-    public const EDITION_PLUS = 'plus';
+    public const EDITION_PRO = 'pro';
+    public const EDITION_PLUS = 'pro'; // Backwards compatibility alias
 
     /**
      * @var SpinToWin
@@ -68,7 +69,7 @@ class SpinToWin extends Plugin
     {
         return [
             self::EDITION_LITE,
-            self::EDITION_PLUS,
+            self::EDITION_PRO,
         ];
     }
 
@@ -79,7 +80,11 @@ class SpinToWin extends Plugin
      */
     public function getEdition(): string
     {
-        return $this->edition ?? self::EDITION_LITE;
+        $edition = $this->edition ?? self::EDITION_LITE;
+        if ($edition === 'plus') {
+            return self::EDITION_PRO;
+        }
+        return $edition;
     }
 
     /**
@@ -260,7 +265,8 @@ class SpinToWin extends Plugin
         return Craft::$app->getView()->renderTemplate('spin-to-win/settings/_plugin-settings', [
             'plugin' => $this,
             'settings' => $this->getSettings(),
-            'isPlus' => $this->editions->isPlus(),
+            'isPro' => $this->editions->isPro(),
+            'isPlus' => $this->editions->isPro(),
         ]);
     }
 

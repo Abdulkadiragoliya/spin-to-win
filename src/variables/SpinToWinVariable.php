@@ -103,6 +103,26 @@ class SpinToWinVariable
     }
 
     /**
+     * Check if active edition is Pro
+     *
+     * @return bool
+     */
+    public function isPro(): bool
+    {
+        return SpinToWin::getInstance()->editions->isPro();
+    }
+
+    /**
+     * Alias for backwards compatibility
+     *
+     * @return bool
+     */
+    public function isPlus(): bool
+    {
+        return $this->isPro();
+    }
+
+    /**
      * Get settings specifically resolved for current or requested site
      *
      * @param string|null $siteHandle
