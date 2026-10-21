@@ -12,8 +12,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Initial official release** of **Spin to Win** for Craft CMS 4 & 5.
 - **Two Commercial Editions**:
-  - **Lite Edition ($69)**: Full promotional wheel builder, SVG customizer, modal and drawer modes, Craft Commerce coupon generation, server-side cryptographic RNG, daily cooldown limit.
-  - **Pro Edition ($99)**: Multi-site support, campaign scheduling (date/time), advanced triggers (scroll %, exit-intent, inactivity), automated winner emails, double opt-in verification tokens, advanced analytics with 5-stage conversion funnels, safe CSV export streaming.
+  - **Lite Edition ($69)**:
+    1. Interactive Live SVG Wheel Builder
+    2. Custom Slice Labels, Colors & Weights
+    3. Center Hub Logo Upload or Text
+    4. Display Modes (Modal Popup & Slide Drawers)
+    5. Basic Triggers (Page Load, Time Delay, Manual)
+    6. Craft Commerce Discount Generation
+    7. Daily Spin Limit & Cooldown (24h / Lifetime)
+    8. Standard Dashboard & Spin History
+  - **Pro Edition ($99)**:
+    *(Includes all 8 Lite features plus 10 advanced features)*:
+    9. Multi-Site Assignment & Regional Targeting
+    10. Per-Site Settings Isolation
+    11. Campaign Start & End Scheduling (Date/Time)
+    12. Advanced Triggers (Scroll %, Exit-Intent, Inactivity)
+    13. Automated Winner Notification Emails
+    14. Double Opt-In Email Verification Tokens
+    15. Advanced Coupon Expiry & Minimum Order Totals
+    16. Comprehensive Analytics & Funnel Reports
+    17. Filterable Reports by Campaign & Site
+    18. Safe CSV Data Export (Spins & Coupons)
 - **Multi-Site Architecture**:
   - Global vs Site-Specific campaign targeting.
   - Isolated per-site settings storage under `siteSettings[<handle>]` (prevents cross-site setting overwriting).

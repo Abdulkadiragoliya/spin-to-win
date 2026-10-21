@@ -87,6 +87,31 @@ Spin to Win is available in two commercial editions through the **Craft Plugin S
 | **Filterable Reports by Campaign & Site** | ❌ | ✅ |
 | **Safe CSV Data Export (Spins & Coupons)** | ❌ | ✅ |
 
+### 🟢 Part 1: Lite Edition Features ($69)
+
+1. **Interactive Live SVG Wheel Builder**: Fluid, crisp vector SVG prize wheel that renders smoothly on all desktop and mobile devices.
+2. **Custom Slice Labels, Colors & Weights**: Customize segment text, background slice colors, and cryptographic probability weights.
+3. **Center Hub Logo Upload or Text**: Brand the center wheel hub with your own custom logo graphic or styled text.
+4. **Display Modes (Modal Popup & Slide Drawers)**: Choose between a responsive centered modal card or a sleek edge-docked sliding drawer.
+5. **Basic Triggers (Page Load, Time Delay, Manual)**: Launch the wheel immediately on page load, after a timed delay (seconds), or via custom button click.
+6. **Craft Commerce Discount Generation**: Automatically generate real Craft Commerce discount coupons or assign static promo codes.
+7. **Daily Spin Limit & Cooldown (24h / Lifetime)**: Server-side cooldown rules enforcing daily spin limits per email address or visitor IP.
+8. **Standard Dashboard & Spin History**: Track total wheel spins, capture lead emails, and review recent prize history in the Craft CP.
+
+### 💎 Part 2: Pro Edition Features ($99)
+*(Includes all 8 Lite features above, plus these 10 exclusive advanced features):*
+
+9. **Multi-Site Assignment & Regional Targeting**: Assign promotional campaigns to specific storefronts or run them universally across all sites.
+10. **Per-Site Settings Isolation**: Configure independent email sender profiles and impression tracking preferences per site.
+11. **Campaign Start & End Scheduling (Date/Time)**: Automate campaign launches with precise start and end date/time controls for holiday sales.
+12. **Advanced Triggers (Scroll %, Exit-Intent, Inactivity)**: Trigger the prize wheel on desktop exit-intent, page scroll depth percentage, or visitor inactivity.
+13. **Automated Winner Notification Emails**: Deliver winning coupons directly to customers via automated, responsive HTML email notifications.
+14. **Double Opt-In Email Verification Tokens**: Validate subscriber email deliverability and require token verification before granting spins.
+15. **Advanced Coupon Expiry & Minimum Order Totals**: Set automated expiration countdowns and enforce minimum cart spend thresholds on prize coupons.
+16. **Comprehensive Analytics & Funnel Reports**: Analyze impression-to-spin conversion rates, winning segment popularity, and customer engagement.
+17. **Filterable Reports by Campaign & Site**: Filter historical spin data, winner logs, and coupon redemptions by campaign and active site.
+18. **Safe CSV Data Export (Spins & Coupons)**: Export captured subscriber leads, spin logs, and coupon records with a single click to CSV.
+
 > **Commercial Licensing**:
 > On production domains, plugin editions are enforced and verified by the official Craft Plugin Store. To run the Pro edition on production, purchase a Pro license ($99) in the Craft Control Panel under **Plugin Store** or **Settings → Plugins**.
 > *(For testing locally on `.test`, `.local`, or `localhost`, you can test either edition freely without a commercial license key).*
