@@ -360,7 +360,7 @@ Add, delete, reorder, and configure wheel segments with live interactive preview
 - **Slice Label**: Text shown on the wheel slice.
 - **Colors**: Hex background and text color pickers.
 - **Prize Type**:
-  - `percentage_discount`: Generates a real Craft Commerce % discount coupon (e.g., 10%, 15%, 25%).
+  - `percent_discount`: Generates a real Craft Commerce % discount coupon (e.g., 10%, 15%, 25%).
   - `fixed_discount`: Generates a real Craft Commerce fixed currency discount coupon (e.g., $5, $10, $50).
   - `free_shipping`: Generates a 100% Free Shipping Commerce coupon code.
   - `no_prize`: A "Try Again" / non-winning slice.
@@ -455,7 +455,7 @@ For headless frontends (Next.js, Nuxt, Astro, Vue, React, Gatsby), Spin to Win p
   "success": true,
   "isWinner": true,
   "winningSegmentIndex": 2,
-  "rewardType": "percentage_discount",
+  "rewardType": "percent_discount",
   "rewardLabel": "15% Off Your Order",
   "couponCode": "SPIN-A8F2K9",
   "discountAmount": 15,
@@ -511,7 +511,7 @@ php craft project-config/set plugins.spin-to-win.edition lite --update-timestamp
 
 ### Discount codes are not generating:
 1. Verify that **Craft Commerce** is installed and enabled.
-2. Verify that the winning slice has a valid **Prize Type** (`percentage_discount`, `fixed_discount`, or `free_shipping`) and a discount amount greater than 0.
+2. Verify that the winning slice has a valid **Prize Type** (`percent_discount`, `fixed_discount`, or `free_shipping`) and a discount amount greater than 0.
 
 ### Emails are not sending:
 1. Verify your Craft CMS mailer settings under **Settings → Email**.

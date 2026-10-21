@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Initial official release** of **Spin to Win** for Craft CMS 4 & 5.
 - **Two Commercial Editions**:
   - **Lite Edition ($69)**: Full promotional wheel builder, SVG customizer, modal and drawer modes, Craft Commerce coupon generation, server-side cryptographic RNG, daily cooldown limit.
-  - **Plus Edition ($99)**: Multi-site support, campaign scheduling (date/time), advanced triggers (scroll %, exit-intent, inactivity), automated winner emails, double opt-in verification tokens, advanced analytics with 5-stage conversion funnels, safe CSV export streaming.
+  - **Pro Edition ($99)**: Multi-site support, campaign scheduling (date/time), advanced triggers (scroll %, exit-intent, inactivity), automated winner emails, double opt-in verification tokens, advanced analytics with 5-stage conversion funnels, safe CSV export streaming.
 - **Multi-Site Architecture**:
   - Global vs Site-Specific campaign targeting.
   - Isolated per-site settings storage under `siteSettings[<handle>]` (prevents cross-site setting overwriting).
@@ -35,9 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Display Triggers**:
   - Immediate page load.
   - Configurable time delay (seconds).
-  - Scroll depth percentage threshold (Plus).
-  - Exit-intent cursor detection (Plus).
-  - User inactivity timer (Plus).
+  - Scroll depth percentage threshold (Pro).
+  - Exit-intent cursor detection (Pro).
+  - User inactivity timer (Pro).
   - Custom storefront buttons with `data-stw-trigger="<handle>"`.
   - Programmatic JavaScript trigger `window.openSpinToWinWidget('<handle>')`.
 - **Anti-Abuse & Compliance**:

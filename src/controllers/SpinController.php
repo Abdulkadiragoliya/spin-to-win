@@ -26,9 +26,6 @@ class SpinController extends Controller
     /**
      * @inheritdoc
      */
-    /**
-     * @inheritdoc
-     */
     protected array|int|bool $allowAnonymous = ['execute', 'eligibility', 'record-view', 'apply-cart'];
 
     /**

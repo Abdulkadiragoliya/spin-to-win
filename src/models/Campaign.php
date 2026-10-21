@@ -193,7 +193,7 @@ class Campaign extends Model
             [['spinPoolSize'], 'integer', 'min' => 10, 'max' => 1000000],
             [['poolCycle'], 'integer', 'min' => 1],
             [['displayMode'], 'in', 'range' => ['popup', 'sidebar']],
-            [['triggerType'], 'in', 'range' => ['load', 'delay', 'scroll', 'manual']],
+            [['triggerType'], 'in', 'range' => ['load', 'delay', 'time', 'scroll', 'exit', 'inactivity', 'manual']],
             [['spinLimitPolicy'], 'in', 'range' => ['daily_per_email', 'unlimited', 'once_per_campaign']],
             [['allocationMode'], 'in', 'range' => [self::MODE_QUOTA_GUARANTEED, self::MODE_PROBABILITY_RANDOM]],
             [['poolStrategy'], 'in', 'range' => [self::STRATEGY_ROLLOVER, self::STRATEGY_RESET]],

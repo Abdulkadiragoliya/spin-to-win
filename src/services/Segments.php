@@ -404,7 +404,7 @@ class Segments extends Component
                     $totalRemaining += max(1, $s->getRemainingPoolQuota());
                 }
 
-                $rand = mt_rand(1, max(1, $totalRemaining));
+                $rand = random_int(1, max(1, $totalRemaining));
                 $running = 0;
                 $winner = $available[0];
 
@@ -438,7 +438,7 @@ class Segments extends Component
                     $totalWeight += max(1, $s->allocatedCount > 0 ? $s->allocatedCount : $s->probabilityWeight);
                 }
 
-                $rand = mt_rand(1, max(1, $totalWeight));
+                $rand = random_int(1, max(1, $totalWeight));
                 $running = 0;
                 $winner = $segments[0];
 

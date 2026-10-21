@@ -78,7 +78,7 @@ class ReportsController extends BaseCpController
     }
 
     /**
-     * Export data as CSV (Plus Edition Only)
+     * Export data as CSV (Pro Edition Only)
      *
      * @return Response
      */

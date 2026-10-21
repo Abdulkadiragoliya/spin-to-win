@@ -152,11 +152,18 @@ class CampaignsController extends BaseCpController
         $campaign->triggerType = (string)$request->getBodyParam('triggerType', 'load');
         $campaign->triggerDelay = (int)$request->getBodyParam('triggerDelay', 0);
         $campaign->scrollThreshold = (int)$request->getBodyParam('scrollThreshold', 0);
-        $campaign->siteId = $request->getBodyParam('siteId') ? (int)$request->getBodyParam('siteId') : null;
-        $startDate = $request->getBodyParam('startDate');
-        $campaign->startDate = !empty($startDate) ? \craft\helpers\DateTimeHelper::toDateTime($startDate) : null;
-        $endDate = $request->getBodyParam('endDate');
-        $campaign->endDate = !empty($endDate) ? \craft\helpers\DateTimeHelper::toDateTime($endDate) : null;
+        // Multi-site & Scheduling (Pro edition only)
+        if ($plugin->editions->isPro()) {
+            $campaign->siteId = $request->getBodyParam('siteId') ? (int)$request->getBodyParam('siteId') : null;
+            $startDate = $request->getBodyParam('startDate');
+            $campaign->startDate = !empty($startDate) ? \craft\helpers\DateTimeHelper::toDateTime($startDate) : null;
+            $endDate = $request->getBodyParam('endDate');
+            $campaign->endDate = !empty($endDate) ? \craft\helpers\DateTimeHelper::toDateTime($endDate) : null;
+        } else {
+            $campaign->siteId = null;
+            $campaign->startDate = null;
+            $campaign->endDate = null;
+        }
 
         $campaign->welcomeTitle = $request->getBodyParam('welcomeTitle', $campaign->welcomeTitle);
         $campaign->welcomeText = $request->getBodyParam('welcomeText', $campaign->welcomeText);
@@ -181,12 +188,6 @@ class CampaignsController extends BaseCpController
             $campaign->wheelSettings = json_encode($wheelSettings);
         } elseif (is_string($wheelSettings)) {
             $campaign->wheelSettings = $wheelSettings;
-        }
-
-        // Scheduling (Pro edition only)
-        if ($plugin->editions->isPro()) {
-            $campaign->startDate = $request->getBodyParam('startDate');
-            $campaign->endDate = $request->getBodyParam('endDate');
         }
 
         if (!$plugin->campaigns->saveCampaign($campaign)) {

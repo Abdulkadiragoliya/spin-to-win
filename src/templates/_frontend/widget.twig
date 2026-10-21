@@ -1433,7 +1433,7 @@
     if (!isDismissedRecently) {
         if (trigger === 'load') {
             setTimeout(() => window['stwWidget_' + handle].open(), 400);
-        } else if (trigger === 'delay') {
+        } else if (trigger === 'delay' || trigger === 'time') {
             const delayMs = Math.max(0, delaySec) * 1000;
             setTimeout(() => window['stwWidget_' + handle].open(), delayMs);
         } else if (trigger === 'scroll') {
@@ -1464,6 +1464,20 @@
                     window['stwWidget_' + handle].open();
                 }
             });
+        } else if (trigger === 'inactivity') {
+            let inactivityTimer;
+            const idleSec = delaySec > 0 ? delaySec : 15;
+            const resetInactivity = function() {
+                clearTimeout(inactivityTimer);
+                inactivityTimer = setTimeout(() => {
+                    window.removeEventListener('mousemove', resetInactivity);
+                    window.removeEventListener('keydown', resetInactivity);
+                    window['stwWidget_' + handle].open();
+                }, idleSec * 1000);
+            };
+            window.addEventListener('mousemove', resetInactivity, { passive: true });
+            window.addEventListener('keydown', resetInactivity, { passive: true });
+            resetInactivity();
         }
     }
 })();

@@ -125,6 +125,18 @@ class Segment extends Model
     /**
      * @inheritdoc
      */
+    public function beforeValidate(): bool
+    {
+        if ($this->rewardType === 'percentage_discount') {
+            $this->rewardType = self::REWARD_PERCENT_DISCOUNT;
+        }
+
+        return parent::beforeValidate();
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function rules(): array
     {
         return [
